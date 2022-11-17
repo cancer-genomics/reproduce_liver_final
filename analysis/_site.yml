@@ -12,7 +12,7 @@ navbar:
   right:
   - icon: fa-github
     text: Source code
-    href: https://github.com/myname/foda2022
+    href: https://github.com/cancer-genomics/foda2022
 output:
   workflowr::wflow_html:
     toc: yes
