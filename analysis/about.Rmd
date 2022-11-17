@@ -7,4 +7,22 @@ editor_options:
   chunk_output_type: console
 ---
 
-Describe your project.
+Code for 
+"Detecting liver cancer using cell-free DNA fragmentomes"
+
+Zachariah H. Foda^1,2^\*, Akshaya V. Annapragada^1^\*, Kavya Boyapati^1^, Daniel C. Bruhm^1^, Nicholas A. Vulpescu^1^, Jamie E. Medina^1^, Dimitrios Mathios^1^, Stephen Cristiano^1,4^, Noushin Niknafs^1^, Harry Luu^2^, Michael G. Goggins^1,2,3^, Robert A. Anders^3^, Jing Sun^5^, Shruti H. Meta^5^, David L. Thomas^2^, Greg D. Kirk^5^,  Vilmos Adleff^1^, Jillian Phallen^1^, Robert B. Scharpf^1,4^, Amy K. Kim^2,#^, and Victor E. Velculescu^1,2,3,#^
+
+
+1.The Sidney Kimmel Comprehensive Cancer Center, Johns Hopkins University School of Medicine, Baltimore, MD, USA.  
+2.Department of Medicine, Johns Hopkins University School of Medicine, Baltimore, MD, USA  
+3.Department of Pathology, Johns Hopkins University School of Medicine, Baltimore, MD, USA.  
+4.Department of Biostatistics, Johns Hopkins Bloomberg School of Public Health, Baltimore, MD, USA  
+5.Department of Epidemiology, Johns Hopkins Bloomberg School of Public Health, Baltimore, MD, USA  
+
+*These authors contributed equally
+
+#To whom correspondence should be addressed:  
+
+Amy K. Kim (akim97@jhmi.edu), Johns Hopkins University School of Medicine, 720 Rutland Ave, Ross 918, Baltimore, MD 21205, tel. 410-502-0418
+and 
+Victor E. Velculescu (velculescu@jhmi.edu), The Sidney Kimmel Comprehensive Cancer Center, Johns Hopkins University School of Medicine, 1550 Orleans St, Room 544, Baltimore, MD 21287, tel. 410-955-7033

@@ -1,0 +1,59 @@
+---
+title: "About"
+output:
+  workflowr::wflow_html:
+    toc: false
+editor_options:
+  chunk_output_type: console
+---
+
+```{r,fig.height= 6, fig.width=16,dev=c("png", "pdf")}
+library(tidyverse)
+library(ggplot2)
+library(here)
+library(ggbump)
+library(cowplot)
+#pdf("../output/tangleall.pdf",height=6,width=16)
+dat<-readRDS(here("data","Alltissuetyperesuball.rds"))
+#dat<-dat[1:20,]
+nes_dat<-dat %>% select(Description,`Liver NES`,`Lung NES`,organ,cancer) %>% gather(key="type",value="NES",`Liver NES`,`Lung NES`)
+nes_dat<-nes_dat %>% mutate(Description=if_else(Description=="ANOPHTHALMIA AND PULMONARY HYPOPLASIA","Anophthalmia and Pulmonary Hypoplasia",Description))
+
+nes_dat$Code<-paste(nes_dat$organ,nes_dat$cancer)
+nes_dat<-nes_dat %>% mutate(Code=if_else(organ=="other","Other",Code))
+
+nes_dat <- nes_dat %>% 
+  group_by(type) %>% 
+  mutate(rank = rank(-NES, ties.method = "random")) %>% 
+  ungroup()
+names<- (nes_dat %>% filter(rank<=25))$Description
+nes_dat <- nes_dat %>% filter(Description %in% names)
+nes_dat <- nes_dat %>% mutate(rank=if_else(rank>25,26,as.double(nes_dat$rank)))
+nes_dat<-nes_dat %>% mutate(Label=if_else(rank>25,"(Rank below 25th)",nes_dat$Description))
+
+#nes_dat <- nes_dat %>% filter(rank<26)
+
+nes_dat <- nes_dat %>% mutate(group=if_else(type=="Liver NES",0,1))
+ggplot(nes_dat, aes(group, rank,group=Description,color=Code)) +
+    geom_bump() +geom_point(size = 3) +
+  geom_text(data = nes_dat %>% filter(group == min(group)),
+            aes(x = group-.5, label = Label), size = 4, hjust = 0) +
+  geom_text(data = nes_dat %>% filter(group == max(group)),
+            aes(x = group+.5, label = Label), size = 4, hjust = 1) +
+  theme_minimal_grid(font_size = 14, line_size = 0) +
+  theme(panel.grid.major = element_blank()) +
+  labs(y = "RANK",
+       x = NULL) +
+  scale_y_reverse() +theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),legend.title=element_blank()) +
+  scale_colour_manual(values=c(`Liver Cancer`="red",`Lung Cancer`="purple",`Other`="gray67"))
+
+
+#dev.off()
+
+
+```
+

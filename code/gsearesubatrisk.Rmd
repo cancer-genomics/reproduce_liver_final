@@ -1,0 +1,240 @@
+---
+title: "TF ranker and GSEA"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r AUCforUS, echo=FALSE}
+library(BSgenome.Hsapiens.UCSC.hg19)
+library(tidyverse)
+library(caTools)
+library(DOSE)
+library(enrichplot)
+library(readxl)
+
+##Locate file outputs of tfbs_coverage*.sh
+cov.df <- read_tsv("../data/cohort_rel_cov2.txt")
+
+#fragDir <<- "/dcs04/scharpf/data/zfoda/livergrangeslink"
+#outDir <<- "/dcs04/scharpf/data/zfoda/remap2020_all"
+
+#if(file.exists("../data/cohort_rel_cov2.txt")){cov.df <- read_tsv("../data/cohort_rel_cov2.txt")
+#}else{
+## For prelim analysis 
+#finished.files <- list.files(file.path(outDir, "tmp"))
+#cov.list <- lapply(finished.files, function(t) readRDS(file.path(file.path(outDir, "tmp", t))))
+#cov.df <- do.call("rbind", cov.list)
+#rownames(cov.df) <- gsub("_rel_cov.rds$", "", finished.files)
+#as.data.frame(cov.df) %>% rownames_to_column(var="id") ->cov.df
+#write_tsv(cov.df,"../data/cohort_rel_cov2.txt")
+#}
+
+
+## read metadata
+
+Livercohortmetadata <- read_excel("../data/Clinical_Metadata_spreadsheet_8_11.xlsx", 
+    sheet = "Flat") 
+
+
+## Combine metadata with relative coverage
+Livercohortmetadata %>% filter(forveryclean == 1,
+                               #is.na(`Treatment before blood draw`)|`Treatment before blood draw`==0,
+                               Cohort != "Danish",
+                               Cohort != "Cocos",
+                               #Cohort != "Alive",
+                               #Cohort == "JHHCC", 
+                               #`HIV status` != 1,
+                               HCCStatus !="Unknown"
+                              ) %>%
+  dplyr::select(id,`HCCStatus`) %>% inner_join(cov.df) ->covm
+
+
+
+## AUC on relative coverage
+as.data.frame(t(colAUC(covm[3:5622],covm$`HCCStatus`, alg = "ROC"))) %>% 
+  rownames_to_column(var = "stat") %>% arrange(-`No vs. Yes`) %>% 
+  mutate("name"=stat)%>% separate(name,into = c("name","TF","extra"), extra = "merge") %>% 
+  separate(name,c("name"), sep = "E") %>% group_by(TF) %>% 
+  mutate("max"=max(`No vs. Yes`)) %>% 
+  arrange(-`No vs. Yes`)%>%  
+  #distinct(TF,.keep_all = TRUE) %>% 
+  ungroup() %>% dplyr::mutate(Rank = order((order(-`No vs. Yes`))))  %>%
+  mutate(liv=ifelse(extra %in% c("Hep-G2","liver","Huh-7_ASYNC"),"liver","other"))  -> tfmorder
+
+if(file.exists("../data/lengthnameTF.rds")){lengthnameTF <- readRDS("../data/lengthnameTF.rds")
+}else{
+tfbs.dir <- "/dcl01/scharpf1/data/dbruhm/delfi_followup/tfbs-pipeline/data/individual_tfs"
+tfbs.sets <- list.files(tfbs.dir)
+
+tfbs.list <- lapply(tfbs.sets, function(t) length(ranges(readRDS(file.path(file.path(tfbs.dir, t))))))
+names(tfbs.list) <-gsub(".rds","",tfbs.sets)
+plyr::ldply(tfbs.list) -> tflengths
+#mart_export <- read_csv("/dcs04/scharpf/data/zfoda/mart_export.txt") %>% rename(converted_alias=`NCBI gene (formerly Entrezgene) ID`,initial_alias=`Gene name`)
+#nameconverter <- read_csv("gProfiler_hsapiens_6-12-2022_7-56-37 AM.csv")
+convert <- read_csv("convert.csv")
+left_join(tfmorder,tflengths, by=c("stat"=".id")) %>%  left_join(convert, by=c("TF"="TF.x")) %>% distinct(stat,.keep_all = TRUE) %>% dplyr::select(1,4,5,8,9,11) %>%  dplyr::rename("peaks"=V1) -> lengthnameTF
+
+
+saveRDS(lengthnameTF,file = "../data/lengthnameTF.rds")
+}
+
+tfmlengthandorder <- left_join(tfmorder,lengthnameTF, by="stat")  %>% filter(peaks>3000) #%>% distinct(TF,.keep_all = TRUE)
+
+saveRDS(tfmlengthandorder,file = "../data/liverlengthandorderatrisk.rds")
+tfmlengthandorder <- readRDS("../data/liverlengthandorderatrisk.rds")
+gtest<- tfmlengthandorder %>% dplyr::select(`converted_alias.x`,max,`No vs. Yes`,TF.x) %>% distinct(`converted_alias.x`, .keep_all = TRUE) 
+gtest %>% dplyr::mutate(`liver_plasma` = order(order(max, decreasing=TRUE))) ->liverorder
+gtest$`No vs. Yes` -> ggene_sets
+gtest$`converted_alias.x` -> names(ggene_sets)
+ggene_list = sort(ggene_sets, decreasing = TRUE)
+gseDGN(ggene_list,scoreType = "pos", eps=0, minGSSize = 100, pvalueCutoff = 1) -> xgn
+enrichplot::dotplot(xgn, showCategory=15,orderBy="x", x="NES",decreasing=TRUE, size="GeneRatio")
+
+png("../output/gsealiverresubatrisk.png")
+gseaplot2(xgn,title = paste0(xgn$Description[1],"\nAdjusted p-value=",format(xgn$p.adjust[1],digits=3)),geneSetID = 4,color = "red",ES_geom = "line")
+dev.off()
+
+png("../output/dotplotliverresubatrisk.png")
+enrichplot::dotplot(xgn, showCategory=15,orderBy="x", x="NES",decreasing=TRUE, size="-pvalue")
+dev.off
+
+
+#Output top and bottom TFs by AUC 
+#TF name
+tfhilow <-tfmlengthandorder %>% arrange(desc(max)) %>% distinct(TF.x,.keep_all = TRUE)
+
+head(unique(tfhilow$TF.x),n=10) ->tfmhilist
+tail(unique(tfhilow$TF.x),n=10) ->tfmlowlist
+
+#File Name
+head(unique(tfhilow$stat),n=10) ->stfmhilist
+tail(unique(tfhilow$stat),n=10) ->stfmlowlist
+
+head(unique(tfhilow),n=10) ->tfmhilistt
+tail(unique(tfhilow),n=10)-> tfmlowlistt
+
+tfmhilistt$stat <- paste0(tfmhilistt$stat,"_coverage1.txt")
+tfmlowlistt$stat <- paste0(tfmlowlistt$stat,"_coverage1.txt")
+
+tfmhilistt$stat -> tfmhilistl
+tfmlowlistt$stat -> tfmlowlistl
+
+##File Names 
+head(unique(tfhilow),n=10) ->tfmhilistfile
+tail(unique(tfhilow),n=10) -> tfmlowlistfile
+tfmhilistfile$stat <- paste0(tfmhilistfile$stat,".rds")
+tfmlowlistfile$stat <- paste0(tfmlowlistfile$stat,".rds")
+write_lines(tfmhilistfile$stat,"tfhilistatrisk.txt")
+write_lines(tfmlowlistfile$stat,"tflowlistatrisk.txt")
+
+
+
+##Import gene to ensemble list
+#mart_export <- read_csv("/dcs04/scharpf/data/zfoda/mart_export.txt") %>% rename(converted_alias=`NCBI gene (formerly Entrezgene) ID`,initial_alias=`Gene name`)
+
+##
+
+as.data.frame( xgn) -> gn.df
+readRDS("../data/lungn") -> lungn.df
+all.df <- gn.df %>% select(Description,NES,`p.adjust`,setSize) %>% dplyr::rename("Liver NES"=NES,"Liver FDR"= `p.adjust`) %>% left_join(lungn.df %>% select(Description,NES,`p.adjust`) %>% dplyr::rename("Lung NES"=NES, "Lung FDR"=`p.adjust`)) #%>% left_join(brain.df) %>% left_join(panc.df) %>% left_join(ov.df, by="Description") %>% select(!setSize.y)
+
+
+all.df$organ <-if_else(grepl("liver|hepa",all.df$Description, ignore.case = TRUE),"Liver",ifelse(grepl("lung",all.df$Description,ignore.case = TRUE,),"Lung","other"))
+
+all.df$cancer <-if_else(grepl("cancer|oma|neoplas|malig|tumor",all.df$Description, ignore.case = TRUE),"Cancer","other")
+
+all.df$label <- ifelse(all.df$`Liver FDR` <0.00003 & all.df$organ=="Liver"|all.df$`Lung FDR` & all.df$organ=="Lung",all.df$Description,"")
+
+
+saveRDS(all.df,"../data/Alltissuetyperesubatrisk.rds")
+
+```
+```{r AUCforval, echo=FALSE}
+library(BSgenome.Hsapiens.UCSC.hg19)
+library(tidyverse)
+library(caTools)
+library(DOSE)
+library(enrichplot)
+
+fragDir <<- "/dcs04/scharpf/data/annapragada/Liver_Curated/granges"
+outDir <<- "/dcs04/scharpf/data/zfoda/remap202_val"
+# If this is the last sample being processed, merge the relative
+# coverage for all TFBSs across all samples into a summary table
+finished.files <- list.files(file.path(outDir, "tmp"))
+cov.list <- lapply(finished.files, function(t) readRDS(file.path(file.path(outDir, "tmp", t))))
+cov.df <- do.call("rbind", cov.list)
+rownames(cov.df) <- gsub("_rel_cov.rds$", "", finished.files)
+as.data.frame(cov.df) %>% rownames_to_column(var="id") ->cov.df
+#cohort_rel_cov <- read.delim("/dcs04/scharpf/data/zfoda/remap2020_all/cohort_rel_cov.txt", row.names=NULL)
+#cohort_rel_cov %>% rename("id"=row.names) ->cov.df
+library(readr)
+Livercohortmetadata_curated <- read_csv("/dcs04/scharpf/data/zfoda/validation_meta.csv") %>% dplyr::rename(id=Sample)
+ 
+
+
+Livercohortmetadata_curated %>% dplyr::select(id,`HCC_Dx`)%>% inner_join(cov.df) ->covm
+as.data.frame(t(colAUC(covm[3:5622],covm$`HCC_Dx`, alg = "ROC"))) %>% 
+  rownames_to_column(var = "stat") %>% arrange(-`No vs. Yes`) %>% 
+  mutate("name"=stat)%>% separate(name,into = c("name","TF","extra"), extra = "merge") %>% 
+  separate(name,c("name"), sep = "E") %>% group_by(TF) %>% 
+  mutate("max"=max(`No vs. Yes`)) %>% 
+  arrange(-`No vs. Yes`)%>%  
+  #distinct(TF,.keep_all = TRUE) %>% 
+  ungroup() %>% dplyr::mutate(Rank = order((order(-`No vs. Yes`))))  %>%
+  mutate(liv=ifelse(extra %in% c("Hep-G2","liver","Huh-7_ASYNC"),"liver","other"))  -> tfmorder
+
+tfbs.dir <- "/dcl01/scharpf1/data/dbruhm/delfi_followup/tfbs-pipeline/data/individual_tfs"
+tfbs.sets <- list.files(tfbs.dir)
+
+tfbs.list <- lapply(tfbs.sets, function(t) length(ranges(readRDS(file.path(file.path(tfbs.dir, t))))))
+names(tfbs.list) <-gsub(".rds","",tfbs.sets)
+plyr::ldply(tfbs.list) -> tflengths
+#tflengths$.id <- gsub("-",".",tflengths$.id)
+
+left_join(tfmorder,tflengths, by=c("stat"=".id")) %>% dplyr::rename(peaks =V1) %>% filter(peaks>4000) -> tfmlengthandorder
+head(tfmlengthandorder$TF,n=14) %>% unique()->tfmhilist
+tail(tfmlengthandorder$TF,n=14) ->tfmlowlist
+
+head(tfmlengthandorder$stat,n=14) %>% unique()->stfmhilist
+tail(tfmlengthandorder$stat,n=14) ->stfmlowlist
+
+head(tfmlengthandorder,n=14) %>% unique()->tfmhilistt
+tail(tfmlengthandorder,n=14)%>% unique()  -> tfmlowlistt
+
+tfmhilistt$stat <- paste0(tfmhilistt$stat,"_coverage1.txt")
+tfmlowlistt$stat <- paste0(tfmlowlistt$stat,"_coverage1.txt")
+
+tfmhilistt$stat -> tfmhilistl
+tfmlowlistt$stat -> tfmlowlistl
+
+head(tfmlengthandorder,n=14) %>% unique()->tfmhilistfile
+tail(tfmlengthandorder,n=14) -> tfmlowlistfile
+tfmhilistfile$stat <- paste0(tfmhilistfile$stat,".rds")
+tfmlowlistfile$stat <- paste0(tfmlowlistfile$stat,".rds")
+write_lines(tfmhilistfile$stat,"tfvalhilistwohiv.txt")
+write_lines(tfmlowlistfile$stat,"tfvallowlistwohiv.txt")
+
+genenames <- read_csv("/dcs04/scharpf/data/zfoda/outdirhigh/genenames.csv")
+
+
+mart_export <- read_csv("/dcs04/scharpf/data/zfoda/mart_export.txt")
+
+left_join(distinct(tfmlengthandorder,TF,.keep_all = TRUE), mart_export, by=c("TF"="Gene name")) %>% dplyr::select(`NCBI gene (formerly Entrezgene) ID`,max) %>% distinct(`NCBI gene (formerly Entrezgene) ID`, .keep_all = TRUE) ->gtest
+gtest$max -> ggene_sets
+gtest$`NCBI gene (formerly Entrezgene) ID` -> names(ggene_sets)
+ggene_list = sort(ggene_sets, decreasing = TRUE)
+gseDGN(ggene_list,scoreType = "pos", eps=0,maxGSSize = 5000, minGSSize = 100) -> xgn
+
+png("gsealiverval.png")
+gseaplot2(xgn,title = paste0(xgn$Description[4],"\nAdjusted p-value=",format(xgn$p.adjust[4],digits=3)),geneSetID = 4,color = "red")
+dev.off()
+png("dotplotliverval.png")
+enrichplot::dotplot(xgn, showCategory=15,orderBy="x", x="NES",decreasing=TRUE, size="GeneRatio")
+dev.off
+
+```

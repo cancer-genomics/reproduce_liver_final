@@ -1,0 +1,168 @@
+---
+title: "Figure 2"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    code_folding: hide
+    toc: true
+editor_options:
+  chunk_output_type: console
+---
+
+## Packages and data
+
+```{r caching, echo=FALSE}
+knitr::opts_chunk$set(autodep = TRUE, echo=FALSE)
+```
+
+```{r}
+library(ggpubr)
+library(ggplot2)
+library(cowplot)
+library(tidyverse)
+library(grid)
+library(gridExtra)
+library(here)
+devtools::load_all(here("code", "liver.tools"))
+data <- here("data", "processed.rds") %>%
+    readRDS()
+```
+
+## Smoothing eigenvalues
+
+```{r smooth_tracks}
+##
+## mean smooth but important to do by group bc edges not cont
+##
+mean_smooth <- function(x) .meanSmoother(x$eigen)
+dat <- data %>%
+    group_by(source2) %>%
+    nest() %>%
+    mutate(data=map(data,
+                    ~ mutate(.x,
+                             eigen=.meanSmoother(eigen)))) %>%
+    unnest("data")
+```
+
+## Chr 22 figure
+
+```{r chromosome22}
+## i dont want to change the name every time but chr param cntrls which chrom
+## This does work I don't want to think about yet
+devtools::load_all(here("code","liver.tools"))
+##trace(chr22_wrangling, browser)
+c22.list <- chr22_wrangling(dat)
+tib <- c22.list[["tib"]]
+track.data <- c22.list[["track.data"]]
+slevels <- levels(track.data$source2) %>%
+    str_replace_all("Healthy", "Noncancer") %>% str_replace_all("HCC Reference AB Compartments","HCC Tissue Reference AB Compartments") %>%
+  str_replace_all("Plasma","cfDNA") %>% str_replace_all("HCC cfDNA","HCC Patients cfDNA") %>% str_replace_all("Lymphoblast HiC Reference AB Compartments","Lymphoblastoid cell HiC Reference AB Compartments") %>% str_replace_all("Noncancer cfDNA","Individuals without cancer cfDNA")
+track.data  <- track.data %>%
+    mutate(source2=as.character(source2),
+           source2=str_replace_all(source2, "Healthy", "Noncancer"),source2=str_replace_all(source2, "HCC Reference AB Compartments","HCC Tissue Reference AB Compartments"),source2=str_replace_all(source2,"Plasma","cfDNA"),source2=str_replace_all(source2,"HCC cfDNA","HCC Patients cfDNA"),source2=str_replace_all(source2,"Lymphoblast HiC Reference AB Compartments","Lymphoblastoid cell HiC Reference AB Compartments"),source2=str_replace_all(source2,"Noncancer cfDNA","Individuals without cancer cfDNA"),
+           source2=factor(source2, slevels))
+b <- ggplot(track.data,
+            aes(x=bin, y=eigen, ##color=source2,
+                fill=color, alpha=transp)) +
+    geom_bar(stat="Identity", width=1) +
+    facet_wrap(vars(source2), ncol=1) +
+    scale_x_continuous(expand = c(0, 0)) +
+    xlab("chr22") +
+    theme_classic(base_size=24) +
+    theme(legend.position="bottom",
+          ##axis.title.y=element_blank(),
+          strip.background=element_blank(),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank()) +
+    ## There are 5 levels of source2
+    ##scale_color_manual(values=c("green", "black",
+    ##                            "red4", "gray50"))+
+    scale_fill_manual(values=c("red4", "gray50"),labels=c("Closed","Open"),name="A/B Compartments")+
+    scale_alpha_identity() +
+    xlab("") +
+    ylab("Fragmentation Profile")
+
+```
+
+```{r chr22_overlay, fig.width=18, fig.height=20, dev=c("png", "pdf")}
+##pdf("Chr22_Overlay.pdf",height=10,width=12)
+#cowplot::plot_grid(b, p, nrow=2, rel_heights=c(2,1),
+                   #align="v", axis="l")
+b
+##Dev.off()
+```
+
+## Deconvolution Boxplots
+
+```{r load_data, echo=FALSE, include=FALSE}
+perc <- deconvolution_boxplots(data)
+```
+
+```{r boxplots,fig.width=12, fig.height=20}
+track.levels <- levels(track.data[["source2"]])
+perc.levels <- levels(perc$source2.x)
+source3 <- track.levels[c(2:4)] %>%
+    setNames(perc.levels)
+perc2 <- perc %>%
+    mutate(source2.x=as.character(source2.x),
+           source=source3[source2.x],
+           source=factor(source, levels=track.levels),
+           is_chr22=ifelse(chr.x=="chr22", "chr22", "other"))
+
+perc2<-perc2 %>% mutate(source=str_replace_all(source, "Extracted HCC Patients cfDNA Component", "Extracted HCC\n Patients\n cfDNA Component"),
+                        source=str_replace_all(source, "Individuals without cancer cfDNA", "Individuals without\n cancer cfDNA"))
+##sizes <- c(1, 3) %>%
+##    setNames(c("other", "chr22"))
+##shapes <- c("20", "17") %>%
+##    setNames(c("other", "chr22"))
+boxplots <- perc2 %>%
+    ggplot(aes(source, odds)) +
+    geom_jitter(size=2, width=0.05,
+                height=0.01, color="gray50") +
+    geom_boxplot(fill="steelblue", outlier.shape = NA, alpha=0.5) +
+    ylab("Odds concordant\n with HCC Tissue Reference\n AB Compartments") + xlab("") +
+    theme_minimal(base_size=24) + ##figure out how to
+    theme(panel.grid=element_blank(),
+          ##panel.spacing=unit(0.5, "lines"),
+          ##strip.placement="outside",
+          strip.background=element_blank(),
+          strip.text=element_text(color="transparent"),
+          ##strip.text=element_text(size=22),
+          #axis.text.y=element_blank(),
+          axis.ticks.y=element_blank()) +
+    scale_y_continuous(breaks=seq(0, 2.5,
+                                  by=0.5))+
+    ##stat_compare_means(label.y = 2.5) +
+    facet_wrap(~source, ncol=1, scales="free_y",
+               drop=FALSE) +
+    geom_hline(yintercept=1, linetype="dashed",
+               color="gray") +
+    coord_flip()
+#boxplot.grobs <- ggplotGrob(boxplots)
+boxplots
+```
+
+## Panels b and c
+
+```{r fig2b, fig.width=20, fig.height=20, dev=c("png", "pdf")}
+#track.grobs <- ggplotGrob(b)
+#track.grobs$heights <- boxplot.grobs$heights
+#track.summary.grob <- ggplotGrob(p)
+#grobs <- list(track.grobs,
+#              boxplot.grobs,
+#              track.summary.grob,
+#              track.leg)
+#m <- rbind(1:2, 3:4)
+#grid.arrange(grobs=grobs,
+#             layout_matrix=m,
+#             widths=c(3, 1),
+#             heights=c(5, 2))
+#vp <- viewport(x=unit(0.87, "npc"),
+#               y=unit(0.95, "npc"),
+#               width=unit(0.15, "npc"),
+#               height=unit(0.1, "npc"),
+#               just="center")
+#pushViewport(vp)
+##grid.rect(gp=gpar(color="black"))
+#grid.draw(all.tracks.leg)
+```

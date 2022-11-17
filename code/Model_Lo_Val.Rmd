@@ -1,0 +1,60 @@
+---
+title: "PreliminaryAnalysis"
+output: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plyr)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(devtools)
+library(here)
+library(caret)
+library(recipes)
+library(pROC)
+library(data.table)
+```
+
+Import all data and format metadata
+```{r data_read}
+
+model_screen<-readRDS(here("data","two_test_plan","delfi-tf-LR_screen.rds"))
+model_surveil<-readRDS(here("data","two_test_plan","delfi-GBM_risk.rds"))
+
+val<-read_csv(here("data","validation_features.csv")) %>% select(id,starts_with("ratio"),starts_with("z"))
+f2<-fread(here("data","validation_rel_cov.txt"))%>% dplyr::rename("id"="V1")
+ref<-read_csv(here("data","TF_names_ref.csv")) 
+ref<-ref %>% filter(liv != "other")
+f2<-f2 %>% select(id,ref$stat)
+val<-inner_join(val,f2,by="id")
+
+
+
+
+
+preds_screen<-predict(model_screen,val,type="prob")$cancer
+library("gbm")
+preds_surv<-predict(model_surveil,val,type="prob")$cancer
+
+
+ids<-val$id
+pred<-tibble(id=ids,score_screen=preds_screen,score_surveil=preds_surv)
+meta<-read_csv(here("data","validation_meta.csv"))
+dat<-inner_join(meta,pred,by=c("Sample"="id"))
+dat<-dat %>% filter(Sample != "GM1137" & Sample != "GM754")
+
+library(pROC)
+d<-dat %>% filter(Group %in% c("HCC","CTR"))
+d<-dat %>% filter(Group != "CTR")
+
+auc(dat$HCC_Dx,dat$score_surveil)
+
+### callibrate?
+write.csv(dat,"../data/val_preds.csv")
+
+```
+
+

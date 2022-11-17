@@ -1,0 +1,145 @@
+---
+title: "Fig 4 feature importance"
+output: html_document
+---
+
+```{r packages}
+library(tidyverse)
+library(caret)
+library(recipes)
+library(pROC)
+library(devtools)
+library(reshape2)
+library(plyr)
+library(here)
+here <- here::here
+outdir <- here("output", "feature_importance.Rmd")
+fs::dir_create(outdir)
+```
+
+```{r data}
+features <- read_csv(here("data","delfi_features.csv"))
+meta <- read_csv(here("data", "Clinical_Metadata_spreadsheet_8_11.csv"))
+model_seq <- readRDS(here("data", "two_test_plan","delfi-GBM_risk.rds"))
+
+meta$grp_id<-sapply(strsplit(meta$id,"P"),"[",1)
+
+cirr<-meta %>% filter(forveryclean==1 & Disease == "Cirrhosis")
+cirr$cat<-"Cirrhosis"
+hbv<-meta %>% filter(forveryclean==1 & Disease == "HBV")
+hbv$cat<-"HBV"
+hcv<-meta %>% filter(forveryclean==1 & Disease == "HCV")
+hcv$cat<-"HCV"
+hcc<-meta %>% filter(forveryclean==1 & Disease == "HCC")
+hcc$cat<-"HCC"
+d1<-rbind(hcc,cirr,hbv,hcv)
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV"|Disease=="HBV" & Cirrhosisstatus=="no","Viral Hepatitis",cat))
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV" & Cirrhosisstatus=="yes","Cirrhosis",cat))
+d1<- d1 %>% mutate(cat=if_else(Disease=="Non-cancer","Non-cancer",cat))
+d1<-d1 %>% mutate(`HCC Status`=if_else(`HCCStatus`=="Yes","Yes","No"))
+
+meta<-d1
+
+```
+
+```{r labels}
+labels <- meta %>% select(id, `HCC Status`)
+labels <- labels %>%
+    mutate(type = ifelse(`HCC Status`=="No", "healthy", "cancer")) %>%
+    select(-`HCC Status`)
+features <- inner_join(features, labels, by=c("id"="id"))
+features <- features  %>% select(-starts_with("cov_"))
+```
+
+
+```{r model}
+#orig_coefs <- coef(t$finalModel, s = t$bestTune$lambda) * (-1) #bc model_seq$levels
+#t <- readRDS(here("data", "two_test_plan","delfi-lr_risk.rds"))
+library(gbm)
+library(Matrix)
+
+test<-varImp(model_seq,scale=T)
+test<-test$importance %>% as.data.frame() %>% rownames_to_column() %>% arrange(-Overall)
+test2<-Matrix(test$Overall,sparse=TRUE)
+rownames(test2)<-test$rowname
+colnames(test2)<-"s1"
+orig_coefs<-test2
+
+
+pr <- prep(model_seq$recipe)
+model_input <- suppressWarnings(bake(pr, new_data = model_seq$trainingData))
+```
+
+```{r feature_wrangling}
+feature_means <- model_input  %>%
+    select(-c(id, type)) %>%
+    colMeans()
+feature_sds <- model_input %>%
+    select(-c(id, type)) %>%
+    as.data.frame() %>%
+    summarise_all(sd)
+feature_coefs <- data.frame(features = names(feature_sds),
+                            sd = as.numeric(feature_sds))
+feature_coefs <- merge(feature_coefs,
+	                   data.frame(features = rownames(orig_coefs),
+	                   	          orig_coefs = as.numeric(orig_coefs)),
+	                   by = 'features', all.x = TRUE)
+feature_coefs$scaled_coefs <- feature_coefs$orig_coefs #* feature_coefs$sd
+#We dont really scale because it is GBM these aren't really coefficients
+```
+
+
+```{r loadings}
+loadings <- broom::tidy(pr, number=1) %>%
+    data.frame()
+loadings <- dcast(loadings, terms ~ component, value.var = 'value')
+loadings$bin.id <- as.numeric(gsub('ratio_', '', loadings$terms))
+loadings <- loadings[with(loadings, order(bin.id)),]
+# only keep PC1 to PC3 given that these terms make the cut for the threshold (as chosen from the recipe -- need to think why LUCAS had 11???)
+loadings <- loadings[,c('terms', 'bin.id', sapply(c(1,3,4), function(x) paste0('PC', x)))]
+
+
+# now work on visualization of the loadings
+pd <- loadings[,! colnames(loadings) %in% c('terms')]
+pd <- melt(pd, id.vars = c('bin.id'))
+pd$pc.id <- as.numeric(gsub('PC', '', pd$variable))
+# annotate pd with chromosome arm and position
+#data(lucas_5mb)
+bins5mb<-read_csv(here("data","long_bins.csv"))
+locs <- unique(bins5mb[,c('bin', 'chr', 'start', 'end', 'arm')])
+locs$pos <- apply(locs[,c('start', 'end')], 1, mean)
+pd <- merge(pd, locs[,c('chr','pos','arm', 'bin')],
+            by.x = 'bin.id', by.y = 'bin', all.x = TRUE)
+pd$arm <- factor(pd$arm, levels = unique(locs$arm))
+
+non.zeros <- as.character(subset(feature_coefs, scaled_coefs != 0)$features)
+
+# Importance barplot------------
+sc <- feature_coefs
+sc$abs.value = abs(sc$scaled_coefs)
+sc$sign.value = factor(sign(sc$scaled_coefs), levels = c(-1, 1))
+sc$feature.type <- sapply(sc$features, function(x) strsplit(as.character(x), split = '_')[[1]][1])
+sc$feature.type <- factor(sc$feature.type, levels = c('zscore', 'ratio'))
+sc <- sc[with(sc, order(-abs.value, feature.type)),]
+sc$features <- factor(sc$features, levels = sc$features)
+sc <- subset(sc, scaled_coefs != 0)
+
+# determine feature order for the heatmap figure
+f <- levels(sc$features)
+pd$pc.id <- factor(as.character(pd$pc.id),
+                   levels = as.character(as.numeric(gsub('ratio_pc_', '', f[grepl('ratio', f)]))))
+
+sc$features <- gsub('zscore_', 'Z ', gsub('ratio_pc_', 'PC ', sc$features))
+sc$features <- gsub('PC 0', 'PC', sc$features)
+sc$features <- factor(sc$features , levels = sc$features)
+```
+
+
+```{r fig4_data}
+results <- list(loadings=loadings,
+                pd=pd,
+                sc=sc)
+saveRDS(results, file=file.path(outdir, "loadings.rds"))
+
+#I didn't really change the code that much, but I extracted GBM feature importance rather than LR
+```

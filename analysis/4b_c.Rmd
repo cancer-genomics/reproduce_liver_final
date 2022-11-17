@@ -1,0 +1,300 @@
+---
+title: "Distribution of DELFI scores by stage and histology"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    code_folding: hide
+    toc: true
+editor_options:
+  chunk_output_type: console
+---
+
+
+```{r caching, echo=FALSE}
+knitr::opts_chunk$set(autodep = TRUE, echo=FALSE)
+```
+
+
+# DELFI score distribution
+
+
+```{r load_data, echo=FALSE, include=FALSE}
+library(SummarizedExperiment)
+library(devtools)
+library(magrittr)
+library(stringr)
+library(tidyverse)
+library(grid)
+library(lemon)
+library(gridExtra)
+library(cowplot)
+library(data.table)
+library(pROC)
+library(RColorBrewer)
+library(here)
+source(here("code","plot-roc.r"))
+rename <- dplyr::rename
+
+se<-read_csv(here("data","two_test_plan","delfi-tf-results_screen.csv"))
+se2<-read_csv(here("data","two_test_plan","delfi-results_risk.csv"))
+se$model<-"Screening Model"
+se2$model <- "Surveillance Model"
+se<-rbind(se,se2)
+se<-se %>% mutate(score=if_else(model=="Screening Model",score.delfi.lr,score.delfi.gbm))
+meta<-read_csv(here("data","Clinical_Metadata_spreadsheet_8_11.csv"))
+meta<-meta %>% mutate(type=if_else(HCCStatus=="Yes","Yes","No"))
+meta$grp_id<-sapply(strsplit(meta$id,"P"),"[",1)
+
+d_c<-meta %>% filter(forveryclean==1 & Disease == "Non-cancer")
+d_c$cat<-"Danish Cocos"
+cirr<-meta %>% filter(forveryclean==1 & Disease == "Cirrhosis")
+cirr$cat<-"Cirrhosis"
+hbv<-meta %>% filter(forveryclean==1 & Disease == "HBV")
+hbv$cat<-"HBV"
+hcv<-meta %>% filter(forveryclean==1 & Disease == "HCV")
+hcv$cat<-"HCV"
+hcc<-meta %>% filter(forveryclean==1 & Disease == "HCC")
+hcc$cat<-"HCC"
+d1<-rbind(hcc,cirr,hbv,d_c,hcv)
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV"|Disease=="HBV" & Cirrhosisstatus=="no","Viral Hepatitis",cat))
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV" & Cirrhosisstatus=="yes","Cirrhosis",cat))
+d1<- d1 %>% mutate(cat=if_else(cat=="Danish Cocos","Non-cancer",cat))
+
+d1$Disease<-d1$cat
+clinical_meta<-d1
+clinical_meta<-clinical_meta %>% mutate(lesion_num=if_else(`Lesion #`<=1,'<=1',`Lesion #`))
+clinical_meta<-clinical_meta %>% mutate(lesion_num=if_else(lesion_num=="2"|lesion_num=="3",'2-3',lesion_num))
+clinical_meta<-clinical_meta %>% mutate(lesion_num=if_else(`Lesion #`>3,'>3',lesion_num))
+clinical_meta<-clinical_meta %>% mutate(lesion_num=if_else(lesion_num=="10"|lesion_num=="inumerable"|lesion_num=="numerous"|lesion_num=="1 major and several satellite",'>3',lesion_num))
+
+clinical_meta<-clinical_meta %>% mutate(lesion_size=if_else(`Lesion diameter1`>`Lesion diameter2`,clinical_meta$`Lesion diameter1`,clinical_meta$`Lesion diameter2`))
+clinical_meta<-clinical_meta %>% mutate(lesion_size=if_else(lesion_size=="Expansively infiltrative"|lesion_size=="expansively infiltrative","10",clinical_meta$lesion_size))
+
+clinical_meta<-clinical_meta %>% mutate(lesion_size=if_else(lesion_size<2,'<2',clinical_meta$lesion_size))
+clinical_meta<-clinical_meta %>% mutate(lesion_size=if_else(lesion_size>=2 &lesion_size<=5 ,'2-5',clinical_meta$lesion_size))
+clinical_meta<-clinical_meta %>% mutate(lesion_size=if_else(lesion_size>5 ,'>5',clinical_meta$lesion_size))
+clinical_meta<-clinical_meta %>% mutate(id=if_else(id=="CGLI55P","CGLI55P_1",clinical_meta$id))
+se<-left_join(se %>% select(-Disease),clinical_meta %>% select(id,lesion_size,Disease,lesion_num),by=c("id"="id"))
+
+
+```
+
+## Distribution by stage and histology
+
+```{r scores}
+model_levels <- c("Screening Model",
+                  "Surveillance Model")
+dat1 <- se %>%
+    as_tibble() %>%filter(model=="Screening Model") %>%
+    select(id, score) %>% 
+    set_colnames(c("lab_id", "score")) %>%
+    mutate(training_model=model_levels[1])
+dat2 <- se %>%
+    as_tibble() %>% 
+    filter(Disease != "Non-cancer") %>% filter(model=="Surveillance Model") %>%
+    select(id, score) %>% 
+    set_colnames(c("lab_id", "score")) %>%
+    mutate(training_model=model_levels[2])
+dat <- bind_rows(dat1, dat2) %>%
+    mutate(training_model=factor(training_model,
+                                 model_levels))
+```
+
+# Training set characteristics
+
+```{r trainingsets, fig.width=12, fig.height=8, dev=c("png", "pdf")}
+clindat <- se %>%
+    as_tibble() %>%
+        mutate(lab_id=id) %>%
+        mutate(training_set1=ifelse(Disease %in% c("HCC","Non-cancer"), 1,0),
+               training_set2=ifelse(Disease=="Non-cancer", 0, 1),
+               nsets=training_set1+training_set2) %>%
+    filter(nsets > 0) %>%
+    mutate(stage=as.character(BCLC)) %>%
+    select(lab_id, Disease, type, stage,lesion_num,lesion_size,
+           training_set1,
+           training_set2) 
+set1 <- filter(clindat, training_set1==1) %>%
+    mutate(set="A")
+set2 <- filter(clindat, training_set2==1) %>%
+    mutate(set="B")
+cohorts <- bind_rows(set1, set2) %>%
+    group_by(set, type) %>%
+    summarize(n=length(unique(lab_id)),
+              .groups="drop") %>%
+    mutate(cancer=ifelse(type =="healthy",
+                         "Non-cancer", "Cancer"))
+```
+
+
+# Distribution of scores
+
+```{r categories}
+source(here("code","plot-roc.r"))
+combined <- fig3_data(se, dat1,dat2)
+```
+
+```{r fig3A, fig.width=22, fig.height=6, dev=c("png", "pdf")}
+
+colors <- brewer.pal(3, "Dark2")
+names(colors) <- model_levels
+
+combined2 <- combined %>%
+    mutate(x=as.character(groups),
+           x=ifelse(x=="Non-cancer", "Non-cancer individuals", x),
+           groups=factor(x, levels=c("Non-cancer individuals", "Cancer stage","Lesion Number","Lesion Size"))) %>% filter(training_model=="Full cohort")
+N <- combined2 %>%
+    group_by(category, training_model) %>%
+    summarize(n=length(unique(lab_id)),
+              groups=unique(groups),
+              .groups="drop") %>%
+    mutate(score=-0.05)
+A <- combined2 %>%
+    ggplot(aes(category, score, fill=training_model)) +
+    geom_point(aes(fill=training_model),
+               position=position_jitterdodge(0.2, dodge.width=0.5),
+               pch=21, alpha=0.5, size=0.7,
+               color="gray") +
+    geom_boxplot(outlier.shape=NA, alpha=0.3,
+                 width=0.3,
+                 position=position_dodge(0.5)) +
+    theme_classic(base_size=20) +
+    theme(panel.grid=element_blank(),
+          axis.text.x=element_text(size=12),
+          ##legend.position="bottom",
+          ##legend.justification=c("center", "bottom"),
+          strip.background=element_rect(fill="white", color="black"),
+          strip.placement="outside") +
+    scale_y_continuous(expand=expansion(add=c(0.04, 0.1)),
+                       breaks=seq(0, 1, by=0.2),
+                       labels=as.character(seq(0, 1, by=0.2))) +
+    xlab("") +
+    ylab("DELFI score") +
+    scale_fill_manual(values=colors) +
+    ##guides(fill=guide_legend(title=""), color=guide_legend(title="")) +
+    guides(fill="none", color="none") +
+    facet_wrap(~groups, nrow=1, scales="free_x", strip.position="bottom")
+Nlabel <- tibble(groups=levels(N$groups)[1]) %>%
+    mutate(groups=factor(groups, levels(N$groups)),
+           label="n", score=-0.05,
+           category=levels(N$category)[1],
+           category=factor(category, levels(N$category)),
+           training_model=N$training_model[1])
+A <- A + geom_text(data=N, aes(label=n), size=4, position=position_dodge(0.5)) +
+    geom_text(data=Nlabel, aes(x=0.5, label="n"), size=4)
+
+```
+
+# Internally cross-validated performance (ROC curves)
+
+```{r performance_data}
+category_levels <- c("Non-cancer","Viral Hepatitis",
+                         "Cirrhosis",
+                         "0", "A", "B", "C")
+nocancer_labels <- c("Non-cancer","Viral Hepatitis",
+                         "Cirrhosis")
+clindat <- fig3_clindat(se)
+overall <- bind_rows(dat1, dat2) %>%
+    mutate(training_model=factor(training_model, model_levels)) %>%
+    left_join(clindat, by="lab_id") %>%
+    mutate(class=ifelse(Disease %in% nocancer_labels, "No cancer",
+                         "Cancer"),
+           class=factor(class, c("No cancer", "Cancer")))
+overall.list <- split(overall, overall$training_model)
+roc_overall  <-  overall.list %>%
+    map_dfr(performance) %>%
+    mutate(category="Overall")
+roc_strata <- fig3_roc(se, dat1, dat2,
+                       model_levels)
+roc_overall2 <- roc_overall %>%
+    mutate(training_model=as.character(training_model),
+           auc=format(round(auc, 2), nsmall=2),
+           lower=format(round(lower, 2), nsmall=2),
+           upper=format(round(upper, 2), nsmall=2),
+           auc_label=paste0(auc, " (", lower, "-", upper, ")"),
+           auc_label=factor(auc_label, unique(auc_label)))
+```
+
+```{r overall,dev=c("png", "pdf")}
+roc_colors <- colors[1:2] %>%
+    setNames(levels(roc_overall2$auc_label))
+B <- roc_overall2 %>%
+    ggplot(aes(spec, sens, group=auc_label)) +
+    geom_vline(xintercept=0.80,
+               color="gray80", size=0.5, linetype="dashed") +
+    geom_line(aes(color=auc_label), size=1.1) +
+    scale_x_reverse(expand=c(0, 0.01),
+                    breaks=c(0, 0.25, 0.5, 0.80, 1),
+                    labels=as.character(
+                        c("0", ".25", ".50", ".80", "1.0"))) +
+    scale_y_continuous(expand=c(0, 0.01),
+                       breaks=c(0, 0.25, 0.5, 0.75, 1),
+                       labels=as.character(
+                           c("0", ".25", ".50", ".75", "1.0"))) +
+    scale_color_manual(values=roc_colors) +
+    theme_classic(base_size=20) +
+    theme(panel.grid=element_blank(),
+          legend.position=c(0.6, 0.2),
+          aspect.ratio=0.8,
+          legend.text.align=1,
+          legend.title=element_text(size=16)) +
+    xlab("Specificity") + ylab("Sensitivity") +
+    guides(color=guide_legend(title="AUC: (95% CI)", hjust=1))
+B
+```
+
+```{r roc_categories,fig.width = 20, fig.height = 6, message=FALSE, warning=FALSE,dev=c("png", "pdf")}
+roc_strata2 <- roc_strata %>%
+    mutate(training_model=as.character(training_model),
+           auc=format(round(auc, 2), nsmall=2),
+           lower=format(round(lower, 2), nsmall=2),
+           upper=format(round(upper, 2), nsmall=2),
+           auc_label=paste0(auc, " (", lower, "-", upper, ")"),
+           auc_label=factor(auc_label, unique(auc_label)))
+models <- model_levels
+legends <- roc_strata2 %>%
+    select(category, training_model, auc_label) %>%
+    distinct() %>%
+    mutate(training_model=factor(training_model, unique(training_model)),
+           training_model=fct_rev(training_model),
+           x=0.7,
+           xend=0.75,
+           y=c(0.1, 0.2, 0.3)[as.integer(training_model)])
+C2 <- roc_strata2 %>%
+    mutate(training_model=factor(training_model, models)) %>%
+    ggplot(aes(spec, sens, group=training_model)) +
+    geom_vline(xintercept=0.80,
+               color="gray80", size=0.5, linetype="dashed") +
+    geom_line(aes(color=training_model), size=1) +
+    scale_x_reverse(expand=c(0, 0.01),
+                    breaks=c(0, 0.25, 0.5, 0.80, 1),
+                    labels=as.character(
+                        c("0", ".25", ".50", ".80", "1.0"))) +
+    scale_y_continuous(expand=c(0, 0.01),
+                       labels=as.character(
+                           c("0", ".25", ".50", ".75", "1.0"))) +
+    geom_segment(data=legends, aes(x=x, xend=xend,
+                                   y=y, yend=y,
+                                   color=training_model),
+                 size=1,
+                 inherit.aes=FALSE) +
+    geom_text(data=legends, aes(x=xend, y=y, label=auc_label),
+              nudge_x=0.09, hjust=0,
+              size=5) +
+    theme_classic(base_size=20) +
+    scale_color_manual(values=colors[1:2]) +
+    theme(panel.background=element_blank(),
+          panel.grid=element_blank(),
+          legend.position="top",
+          ##legend.position=c(0.8, 0.2),
+          axis.line.x.bottom=element_line(color="black"),
+          strip.background=element_blank(),
+          aspect.ratio=0.95) +
+    xlab("Specificity") + ylab("Sensitivity") +
+    guides(color=guide_legend(title="")) +
+    facet_rep_wrap(~category, nrow=1)
+
+C2
+```
+
+

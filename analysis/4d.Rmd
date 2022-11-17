@@ -1,0 +1,183 @@
+---
+title: "Distribution of DELFI scores by stage and histology"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    code_folding: hide
+    toc: true
+editor_options:
+  chunk_output_type: console
+---
+
+
+```{r caching, echo=FALSE}
+knitr::opts_chunk$set(autodep = TRUE, echo=FALSE)
+```
+
+
+# DELFI score distribution
+
+
+```{r load_data, echo=FALSE, include=FALSE}
+library(SummarizedExperiment)
+library(devtools)
+library(magrittr)
+library(stringr)
+library(tidyverse)
+library(grid)
+library(lemon)
+library(gridExtra)
+library(cowplot)
+library(data.table)
+library(pROC)
+library(RColorBrewer)
+library(here)
+source(here("code","plot-roc.r"))
+rename <- dplyr::rename
+
+se<-read_csv(here("data","val_preds.csv"))
+se <- se %>% rename(id=Sample) 
+```
+
+```{r}
+s<-se %>% filter(Group != "CTR")
+ci.auc(s$HCC_Dx,s$score_surveil)
+auc(s$HCC_Dx,s$score_surveil)
+
+ggplot(se,aes(x=Group,y=score_surveil)) + geom_boxplot(outlier.shape = NA)+geom_jitter()
+
+
+res<-read_csv(here("data","two_test_plan","delfi-results_risk.csv"))
+
+risk_dat<-roc(res$type,res$score.delfi.gbm,levels=c("healthy",'cancer')) %>%
+coords(transpose=FALSE)
+#At a specificity of 80% the sensitivity is 85% and the DELFI score cutoff is 0.26001855
+
+se<-se %>% mutate(positive=if_else(score_surveil<.26,"No","Yes"))
+se %>% group_by(Group,positive) %>% summarize(n())
+
+#At the DELFI threshold for 80% specificity with the surveillance model (at risk cohort):
+#On the validation set:
+#Sensitivity is 98% (88/90)
+#Specificity on Cirrhosis is 60%
+#Specificity on Control samples is 47%
+#Specificity on HBV is 62%
+
+
+
+
+
+
+```
+
+
+
+
+
+## Distribution by stage and histology
+
+```{r scores}
+model_levels <- c("Screening Model",
+                  "Surveillance Model")
+dat1 <- se %>%
+    as_tibble() %>% filter(Group %in% c("CTR","HCC")) %>%
+    select(id, score_screen) %>%
+    set_colnames(c("lab_id", "score")) %>%
+    mutate(training_model=model_levels[1])
+dat2 <- se %>%
+    as_tibble() %>% 
+    filter(Group != "CTR") %>%
+    select(id, score_surveil) %>%
+    set_colnames(c("lab_id", "score")) %>%
+    mutate(training_model=model_levels[2])
+dat <- bind_rows(dat1, dat2) %>%
+#dat<-dat2 %>%
+    mutate(training_model=factor(training_model,
+                                 model_levels))
+
+
+```
+
+
+
+# Training set characteristics
+
+```{r trainingsets, fig.width=12, fig.height=8, dev=c("png", "pdf")}
+clindat <- se %>%
+    as_tibble() %>%
+        mutate(lab_id=id) %>%
+        mutate(training_set1=ifelse(Group %in% c("CTR","HCC"), 1, 0),
+               training_set2=ifelse(Group=="CTR", 0, 1),
+               #training_set2=1,
+               nsets=training_set1+training_set2) %>%
+    filter(nsets > 0)
+    
+set1 <- filter(clindat, training_set1==1) %>%
+    mutate(set="A")
+set2 <- filter(clindat, training_set2==1) %>%
+    mutate(set="B")
+cohorts <- bind_rows(set1, set2) %>%
+    group_by(set, HCC_Dx) %>%
+    summarize(n=length(unique(lab_id)),
+              .groups="drop") %>%
+    mutate(cancer=ifelse(HCC_Dx %in% c("No"),
+                         "Non-cancer", "Cancer"))
+```
+
+```{r}
+overall <- bind_rows(dat1, dat2) %>%
+    mutate(training_model=factor(training_model, model_levels)) %>%
+    left_join(clindat, by="lab_id") %>%
+    mutate(class=ifelse(HCC_Dx == "No", "No cancer",
+                         "Cancer"),
+           class=factor(class, c("No cancer", "Cancer")))
+overall.list <- split(overall, overall$training_model)
+roc_overall  <-  overall.list %>%
+    map_dfr(performance) %>%
+    mutate(category="Overall")
+
+roc_overall2 <- roc_overall %>%
+    mutate(training_model=as.character(training_model),
+           auc=format(round(auc, 2), nsmall=2),
+           lower=format(round(lower, 2), nsmall=2),
+           upper=format(round(upper, 2), nsmall=2),
+           auc_label=paste0(auc, " (", lower, "-", upper, ")"),
+           auc_label=factor(auc_label, unique(auc_label)))
+
+colors <- brewer.pal(3, "Dark2")
+names(colors) <- model_levels
+
+roc_overall2$category = "Validation set"
+roc_overall2<-roc_overall2 %>% filter(training_model != "Screening Model")
+
+roc_colors <- colors[2] %>% setNames(c("0.97 (0.95-0.99)"))
+    #setNames(levels(roc_overall2$auc_label))
+B <- roc_overall2 %>%
+    ggplot(aes(spec, sens, group=auc_label)) +
+    geom_vline(xintercept=0.80,
+               color="gray80", size=0.5, linetype="dashed") +
+    geom_line(aes(color=auc_label), size=1.1) +
+    scale_x_reverse(expand=c(0, 0.01),
+                    breaks=c(0, 0.25, 0.5, 0.80, 1),
+                    labels=as.character(
+                        c("0", ".25", ".50", ".80", "1.0"))) +
+    scale_y_continuous(expand=c(0, 0.01),
+                       breaks=c(0, 0.25, 0.5, 0.75, 1),
+                       labels=as.character(
+                           c("0", ".25", ".50", ".75", "1.0"))) +
+    scale_color_manual(values=roc_colors) +
+    theme_classic(base_size=20) +
+    theme(panel.grid=element_blank(),
+          legend.position=c(0.6, 0.2),
+          aspect.ratio=0.8,
+          legend.text.align=1,
+          legend.title=element_text(size=16)) +
+    xlab("Specificity") + ylab("Sensitivity") +
+    guides(color=guide_legend(title="AUC: (95% CI)", hjust=1)) + facet_rep_wrap(~category, nrow=1) + theme( strip.background = element_blank() )
+B
+```
+
+```{r overall,dev=c("png", "pdf")}
+B
+```
+

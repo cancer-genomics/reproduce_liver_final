@@ -1,0 +1,349 @@
+---
+title: "Fragmentation profiles"
+site: workflowr::wflow_site
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+chunk_output_type: console
+---
+
+```{r caching, echo=FALSE}
+knitr::opts_chunk$set(autodep = TRUE)
+```
+
+```{r packages, echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(magrittr)
+library(tidyverse)
+library(fs)
+library(grid)
+library(data.table)
+library(cowplot)
+library(devtools)
+library(here)
+
+# 2 lines below added because of some idiosyncrasies of linux
+options(bitmapType="cairo")
+Sys.setenv(MKL_THREADING_LAYER="GNU")
+```
+
+
+```{r data, echo=FALSE}
+## fragmentation profiles - LUCAS (training)
+bins5mb <- as_tibble(read_csv(here("data","long_bins_val.csv"))) %>% filter(chr != "chrX")
+bins5mb <- bins5mb %>% mutate(ratio.cor = short.cor/long.cor)
+bins5mb <- bins5mb %>% group_by(id) %>%
+    mutate(ratio.centered = scale(ratio.cor, scale=FALSE)[,1])
+meta<-as_tibble(read_csv(here("data","validation_meta.csv"))) %>% filter(Sample != "GM1137" & Sample !="GM754")
+fp2 <- inner_join(bins5mb, meta, by=c("id"="Sample"))
+
+#fp2 <- fp2 %>% filter(assigned_group != 1) %>%
+ #   mutate(`Diagnosis category` =
+  #         case_when(grepl("^no baseline cancer$", patient.type) ~ "No cancer",
+   #                  grepl("^benign$", patient.type) ~ "benign",
+    #                 !grepl("^benign$|^no baseline cancer$",
+     #                      patient.type) ~ "Lung cancer"))
+
+fp2 <-  arrange(fp2, id, bin) %>%
+    mutate(bin=factor(bin),
+           arm=factor(arm, levels=unique(arm))) %>%
+    mutate(dx=factor(Group, levels=c("CTR", "HBV","Cirrhosis",
+                                  "HCC")))
+
+panel.labels <- fp2 %>%
+    group_by(dx) %>%
+    summarize(n=length(unique(id)),
+              .groups="drop") %>%
+    mutate(labels=paste0(c("Non-cancer, healthy (n=",
+                           "Non-cancer, HBV (n=",
+                           "Non-cancer, Cirrhosis (n=",
+                           "HCC (n="),
+                         n, ")"),
+           arm="1p") %>%
+    mutate(x=rep(5, 4), y=rep(0.2, 4))
+
+
+arm <- fp2 %>% group_by(arm) %>%
+  summarize(n=n(), .groups="drop") %>%
+  mutate(arm = as.character(arm))
+small.arms <- setNames(c("", "", "12q", "", "",
+                         "", "", "", "",
+                         "", "", "", "",
+                         "", ""),
+                       c("10p", "12p", "12q", "16p", "16q",
+                         "17p", "17q", "18p", "18q",
+                         "19p", "19q", "20p", "20q",
+                         "21q", "22q"))
+arm.labels <- setNames(arm$arm, arm$arm)
+arm.labels[names(small.arms)] <- small.arms
+```
+
+```{r fig2a, echo=FALSE, fig.width=30, fig.height=15, dev=c("png", "pdf")}
+fig <- fp2 %>% group_by(dx) %>%
+    ggplot(aes(x = bin, y = ratio.centered, group = id)) +
+    geom_line(size = 0.5, color="gray60") +
+              ##alpha = 0.33) +
+    labs(x = "",
+         y = "Fragmentation profile\n", color = "") +
+    ##facet_grid(dx~arm, switch = "x",
+    ##space = "free_x", scales = "free_x") +
+    facet_grid(dx~arm,  ##switch="x",
+               space="free_x", scales="free_x",
+               labeller=labeller(arm=arm.labels),
+               switch="x") +    
+    theme_classic(base_size=25) +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          strip.background=element_blank(),
+          strip.text.y=element_blank(),
+          axis.text.y=element_text(size=26),
+          axis.title.y=element_text(size=30)) +
+          ##strip.text.x=element_text(angle=30)) +
+    scale_y_continuous(breaks=c(-0.2,-0.1, 0, 0.1, 0.2)) +
+    coord_cartesian(ylim=c(-0.19, 0.19))
+
+
+
+#ggdraw(fig) + draw_label(label=panel.labels$labels[1], x=0., y=0.97, hjust=0, size=20)
+# ggdraw(fig) + 
+
+fig <- ggdraw(fig) + draw_grob(textGrob(
+  label=panel.labels$labels[1],
+  x = unit(0.15, "npc"),
+  y = unit(.95, "npc"),
+  hjust = 0,
+  gp = gpar(cex=2)
+))  +
+    draw_grob(textGrob(
+     label=panel.labels$labels[2],
+     x = unit(0.15, "npc"),
+     y = unit(0.75, "npc"),
+     hjust = 0,
+     gp = gpar(cex=2)
+)) +
+    draw_grob(textGrob(
+     label=panel.labels$labels[3],
+     x = unit(0.15, "npc"),
+     y = unit(0.5, "npc"),
+     hjust = 0,
+     gp = gpar(cex=2)
+)) +
+    draw_grob(textGrob(
+     label=panel.labels$labels[4],
+     x = unit(0.15, "npc"),
+     y = unit(0.25, "npc"),
+     hjust = 0,
+     gp = gpar(cex=2)
+))
+
+
+tg10p  <- textGrob("10p",
+           x=unit(0.6, "npc"),
+           y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0))
+ 
+tg12p <- textGrob("12p",
+           x=unit(0.692, "npc"),
+           y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0))
+
+### changed x-coordinates a little bit (16p was trampling on 15q; 16q was trampling on 16p)
+tg16p <- textGrob("16p",
+          x=unit(0.830, "npc"),
+          y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0))
+
+tg16q <- textGrob("16q",
+          x=unit(0.846, "npc"),
+          y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0))
+
+tg17p <- textGrob(" 17p",
+          x=unit(0.86, "npc"),
+          y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0),
+          rot=45)
+
+
+tg17q <- textGrob(" 17q",
+          x=unit(0.875, "npc"),
+          y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0),
+          rot=45)
+
+tg18p <- textGrob(" 18p",
+          x=unit(0.892, "npc"),
+          y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0),
+          rot=45)
+
+tg18q <- textGrob(" 18q",
+          x=unit(0.906, "npc"),
+          y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0),
+          rot=45)
+
+tg19p <- textGrob(" 19p",
+          x=unit(0.92, "npc"),
+          y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0),
+          rot=45)
+
+tg19q <- textGrob(" 19q",
+          x=unit(0.935, "npc"),
+          y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0),
+          rot=45)
+
+tg20p <- textGrob(" 20p",
+          x=unit(0.95, "npc"),
+          y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0),
+          rot=45)
+
+tg20q <- textGrob(" 20q",
+          x=unit(0.965, "npc"),
+          y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0),
+          rot=45)
+
+tg21q <- textGrob(" 21q",
+          x=unit(0.98, "npc"),
+          y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0),
+          rot=45)
+
+tg22q <- textGrob(" 22q",
+          x=unit(0.99, "npc"),
+          y=unit(0.062, "npc"), gp=gpar(cex=1.6, hjust=0,
+                                       vjust=0),
+          rot=45)
+
+fig <- fig + draw_grob(tg10p) + draw_grob(tg12p) + draw_grob(tg16p) +
+    draw_grob(tg16q) + draw_grob(tg17p) + draw_grob(tg17q) + draw_grob(tg18p) +
+    draw_grob(tg18q) + draw_grob(tg19p) + draw_grob(tg19q) + draw_grob(tg20p) +
+    draw_grob(tg20q) + draw_grob(tg21q) + draw_grob(tg22q)
+
+
+fig
+#save_plot("val_frag.pdf", fig, base_width=30, base_height=15)
+```
+
+```{r}
+median_val_CTR<-fp2 %>% filter(Group=="CTR") %>% ungroup() %>% group_by(bin) %>% summarize(Median=median(ratio.cor))
+meta_val<-as_tibble(read_csv(here("data","validation_meta.csv"))) %>% filter(Sample != "GM1137" & Sample !="GM754")
+
+
+bins5mb <- as_tibble(read_csv(here("data","long_bins.csv"))) %>% filter(chr != "chrX")
+bins5mb <- bins5mb %>% mutate(ratio.cor = short.cor/long.cor)
+bins5mb <- bins5mb %>% group_by(id) %>%
+    mutate(ratio.centered = scale(ratio.cor, scale=FALSE)[,1])
+
+meta <- read_csv(here("data", "Clinical_Metadata_spreadsheet_8_11.csv"),
+                 show_col_types=FALSE)
+meta$grp_id<-sapply(strsplit(meta$id,"P"),"[",1)
+
+d_c<-meta %>% filter(forveryclean==1 & Disease == "Non-cancer")
+d_c$cat<-"Danish Cocos"
+cirr<-meta %>% filter(forveryclean==1 & Disease == "Cirrhosis")
+cirr$cat<-"Cirrhosis"
+hbv<-meta %>% filter(forveryclean==1 & Disease == "HBV")
+hbv$cat<-"HBV"
+hcv<-meta %>% filter(forveryclean==1 & Disease == "HCV")
+hcv$cat<-"HCV"
+hcc<-meta %>% filter(forveryclean==1 & Disease == "HCC")
+hcc$cat<-"HCC"
+d1<-rbind(hcc,cirr,hbv,d_c,hcv)
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV"|Disease=="HBV" & Cirrhosisstatus=="no","Viral Hepatitis",cat))
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV" & Cirrhosisstatus=="yes","Cirrhosis",cat))
+d1<- d1 %>% mutate(cat=if_else(Disease=="Non-cancer","Non-cancer",cat))
+meta<-d1
+meta$Disease<-meta$cat
+meta<-meta %>% mutate(`HCC Status`=if_else(`HCCStatus`=="Yes","Yes","No"))
+
+
+
+fp3 <- inner_join(bins5mb, meta, by=c("id"="id"))
+median_train_healthy<-fp3 %>% filter(Disease=="Non-cancer") %>% ungroup() %>% group_by(bin) %>% summarize(Median=median(ratio.cor))
+
+cor(median_train_healthy$Median,median_val_CTR$Median,method="spearman")
+
+
+val_id<-unique(fp2$id)
+i<-1
+test<-fp2 %>% filter(id==val_id[i])
+c<-cor(test$ratio.cor,median_val_CTR$Median,method="spearman")
+c2<-cor(test$ratio.cor,median_train_healthy$Median,method="spearman")
+dat<-tibble(id=val_id[i],cor_val=c,cor_train=c2)
+
+for (i in 2:length(val_id)) {
+  test<-fp2 %>% filter(id==val_id[i])
+  c<-cor(test$ratio.cor,median_val_CTR$Median,method="spearman")
+  c2<-cor(test$ratio.cor,median_train_healthy$Median,method="spearman")
+  d<-tibble(id=val_id[i],cor_val=c,cor_train=c2)
+  dat<-rbind(dat,d)
+
+}
+
+dat$set<-"Validation"
+dat<-inner_join(dat,meta_val %>% select(Sample,Group),by=c("id"="Sample"))
+
+
+train_id<-unique(fp3$id)
+i<-1
+test<-fp3 %>% filter(id==train_id[i])
+c<-cor(test$ratio.cor,median_val_CTR$Median,method="spearman")
+c2<-cor(test$ratio.cor,median_train_healthy$Median,method="spearman")
+dat2<-tibble(id=train_id[i],cor_val=c,cor_train=c2)
+
+for (i in 2:length(train_id)) {
+  test<-fp3 %>% filter(id==train_id[i])
+  c<-cor(test$ratio.cor,median_val_CTR$Median,method="spearman")
+  c2<-cor(test$ratio.cor,median_train_healthy$Median,method="spearman")
+  d<-tibble(id=train_id[i],cor_val=c,cor_train=c2)
+  dat2<-rbind(dat2,d)
+
+}
+
+dat2$set<-"Train"
+dat2<-inner_join(dat2,meta %>% select(id,Disease),by=c("id"="id"))
+dat<- dat %>% rename(Disease=Group)
+
+data<-rbind(dat,dat2)
+
+data<-data %>% gather(key="cor_type",value="r",cor_val,cor_train)
+data<- data %>% mutate(Disease=if_else(Disease=="CTR","Non-cancer",Disease))
+data<- data %>% mutate(Disease=if_else(Disease=="HBV","Viral Hepatitis",Disease))
+
+data$Disease<-factor(data$Disease,levels=c("Non-cancer","Viral Hepatitis","Cirrhosis","HCC"))
+#pdf("Corr.pdf")
+ggplot(data,aes(x=Disease,y=r))+facet_grid(set~cor_type)+geom_boxplot(outlier.shape=NA)+geom_jitter(size=.001)
+#dev.off()
+
+
+```
+New nice plot
+```{r,echo=FALSE, fig.width=20, fig.height=8, dev=c("png", "pdf")}
+dat2<-data
+dat2<- dat2 %>% mutate(label=paste(dat2$set,dat2$cor_type,sep=" "))
+dat2<- dat2 %>% filter(label %in% c("Validation cor_val","Train cor_train" ))
+#dat2<-dat2 %>% mutate(label2=if_else(label=="Validation cor_val","HK \nto HK",dat2$label))
+#dat2<-dat2 %>% mutate(label2=if_else(label=="Train cor_val","US/EU \nto HK",dat2$label2))
+#dat2<-dat2 %>% mutate(label2=if_else(label=="Validation cor_train","HK \nto US/EU",dat2$label2))
+#dat2<-dat2 %>% mutate(label2=if_else(label=="Train cor_train","US/EU \nto US/EU",dat2$label2))
+dat2<-dat2 %>% mutate(set=if_else(set=="Train","US/EU Cohort","Hong Kong Cohort"))
+dat2 <- dat2 %>%
+    mutate(set=factor(set, c("US/EU Cohort","Hong Kong Cohort"))) 
+
+d.levels <- c("Non-cancer","Viral Hepatitis","Cirrhosis","HCC")
+dat2 <- dat2 %>%
+    mutate(label2=factor(Disease, d.levels)) 
+
+n.disease <- dat2 %>%
+    group_by(label2) %>%
+    summarize(n=n()) %>%
+    mutate(label=label2)
+
+#ggplot(dat2,aes(x=label,y=r))+facet_wrap(vars(Disease))+geom_boxplot(outlier.shape=NA)+geom_jitter(size=.001)
+#pdf("Correlations.pdf",width=12,height=5)
+ggplot(dat2, aes(x=label2, y=r)) +
+    geom_jitter(size=1, width=0.05, height=0.01, color="gray50") +
+    geom_boxplot(fill="steelblue", outlier.shape = NA,
+                 width=0.13, alpha=0.3) + facet_wrap(vars(set)) +
+    scale_x_discrete(labels=n.disease$label2) + ylim(c(0,1)) +
+    ylab("Correlation to Median Non-cancer") +
+    theme_classic(base_size=18) + ##figure out how to
+    theme(panel.grid=element_blank()) +
+    xlab("")
+#dev.off()
+```
+
+
+
+

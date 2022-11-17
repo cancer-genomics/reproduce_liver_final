@@ -1,0 +1,224 @@
+---
+title: "Fig S6"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: false
+editor_options:
+  chunk_output_type: console
+---
+
+
+```{r packages, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(data.table)
+library(RColorBrewer)
+library(grid)
+library(gridExtra)
+library(here)
+devtools::load_all(here("code","liver.tools"))
+```
+Read in Noushin's data for TCGA figure
+
+```{r data}
+fig.data <- readRDS(here('data', 'TCGA', 'fig2c_p2_data.rds'))
+```
+
+## TCGA copy number
+
+TCGA figure panel -- problems, chromosome widths, making the panel match size of one facet in z-score panel
+
+```{r plot, fig.height= 23, fig.width=8,dev=c("png", "pdf")}
+setDT(fig.data)
+fig.data[,bin:=as.factor(rev(bin))][]
+fig.data$disease<-"TCGA Liver Cancers\n(n = 372)"
+plot <- fig.data %>%
+    mutate(disease="TCGA Liver Cancers\n(n = 372)") %>%
+    ggplot(aes(x=value, y=bin, color=change, fill=change)) +
+    facet_grid(arm~disease, scales = 'free_y') + ##,
+    ##           switch = 'y')+#, space = 'free')+
+    ##facet_wrap(~arm, ncol=1, scales="free_y") +
+    geom_col() +
+    scale_x_continuous() +
+    scale_fill_brewer(palette = 'Set1')+
+    scale_color_brewer(palette = 'Set1')+
+    theme_minimal(base_size=24) +
+    theme(strip.text.y = element_text(angle = 0,
+                                      hjust = 0.5,
+                                      vjust = 0.5,
+                                      size=20),
+          strip.text.x=element_text(size=26),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          panel.grid =  element_blank(),
+          legend.title = element_blank(),
+          legend.position="bottom") +
+    xlab("Proportion of\ncases with CNV") +
+    ylab("Chromosome Arm")
+```
+
+## Liver study z-scores
+
+The z-score's with our data panel. Problems -- chromosome width.
+
+```{r z_scores}
+features <- read_csv(here("data","delfi_features.csv"),
+                     show_col_types=FALSE)
+meta <- read_csv(here("data", "Clinical_Metadata_spreadsheet_8_11.csv"),
+                 show_col_types=FALSE)
+meta$grp_id<-sapply(strsplit(meta$id,"P"),"[",1)
+
+d_c<-meta %>% filter(forveryclean==1 & Disease == "Non-cancer")
+d_c$cat<-"Danish Cocos"
+cirr<-meta %>% filter(forveryclean==1 & Disease == "Cirrhosis")
+cirr$cat<-"Cirrhosis"
+hbv<-meta %>% filter(forveryclean==1 & Disease == "HBV")
+hbv$cat<-"HBV"
+hcv<-meta %>% filter(forveryclean==1 & Disease == "HCV" & `HIV status`==0)
+hcv$cat<-"HCV"
+hcc<-meta %>% filter(forveryclean==1 & Disease == "HCC")
+hcc$cat<-"HCC"
+d1<-rbind(hcc,cirr,hbv,d_c,hcv)
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV"|Disease=="HBV" & Cirrhosisstatus=="no","Viral Hepatitis",cat))
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV" & Cirrhosisstatus=="yes","Cirrhosis",cat))
+d1<- d1 %>% mutate(cat=if_else(Disease=="Non-cancer","Non-cancer",cat))
+meta<-d1
+meta$Disease<-meta$cat
+meta<-meta %>% mutate(`HCC Status`=if_else(`HCCStatus`=="Yes","Yes","No"))
+
+ns <- meta %>%
+    group_by(Disease) %>%
+    summarize(n=length(unique(id)))
+
+cols <- brewer.pal(7,"Set1")
+cols[3] <- cols[4]
+features2 <- zscore_features(features, meta) %>%
+    select(id, hcc_status, Disease, Arm,
+           z, root2, root3, y, colors, transp)
+ns <- features2 %>%
+    group_by(hcc_status) %>%
+    summarize(n=length(unique(id))) %>%
+    mutate(label=paste0(hcc_status, "\n(n = ", n, ")"))
+ns <- setNames(ns$label, ns$hcc_status)
+zplot_cancer <- features2 %>%
+    ggplot(aes(x=y, y=z, color=colors, alpha=transp)) +
+    geom_point(size=5) +
+    facet_grid(Arm ~ hcc_status, scales = 'free_y',
+               labeller=labeller(hcc_status=ns)) +
+    coord_flip() +
+    theme_minimal(base_size=24) +
+    theme(strip.text.y.left = element_text(angle = 0,
+                                           hjust = 0.5,
+                                           vjust = 0.5),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+
+          panel.grid =  element_blank(),
+          plot.title = element_blank(),
+          legend.title = element_blank(),
+          axis.title.y=element_blank(),
+          legend.position = "bottom",
+          strip.text.x = element_text(size=26),
+          strip.text.y = element_blank()) +
+    scale_y_continuous(limits = c(-150,150)) +
+    scale_alpha_identity() +
+    scale_fill_manual(values = cols) +
+    scale_color_manual(values = cols) +
+    ylab("Z-Score")
+```
+
+```{r}
+features <- read_csv(here("data","validation_features.csv"),
+                     show_col_types=FALSE)
+meta <- read_csv(here("data", "validation_meta.csv"),
+                 show_col_types=FALSE)
+meta<-meta %>% filter(Sample !="GM1137" & Sample != "GM754")
+
+cols <- brewer.pal(7,"Set1")
+cols[3] <- cols[4]
+meta <- meta %>% rename(id = Sample)
+meta<- meta %>% rename(`HCC Status` = HCC_Dx)
+meta<-meta %>% rename(Disease=Group) %>% mutate(Disease=if_else(Disease=="CTR","Non-cancer",Disease))
+features2 <- zscore_features(features, meta) %>%
+    select(id, hcc_status, Disease, Arm,
+           z, root2, root3, y, colors, transp)
+ns.cuhk <- features2 %>%
+    group_by(hcc_status) %>%
+    summarize(n=length(unique(id))) %>%
+    mutate(label=paste0(hcc_status, "\n(n = ", n, ")"))
+ns.cuhk <- setNames(ns.cuhk$label, ns.cuhk$hcc_status)
+zplot_cancer_cuhk <- features2 %>%
+    ggplot(aes(x=y, y=z, color=colors, alpha=transp)) +
+    geom_point(size=5) +
+    facet_grid(Arm ~ hcc_status, scales = 'free_y',
+               labeller=labeller(hcc_status=ns.cuhk)) +
+    coord_flip() +
+    theme_minimal(base_size=24) +
+    theme(strip.text.y.left = element_text(angle = 0,
+                                           hjust = 0.5,
+                                           vjust = 0.5),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+
+          panel.grid =  element_blank(),
+          plot.title = element_blank(),
+          legend.title = element_blank(),
+          axis.title.y=element_blank(),
+          legend.position = "bottom",
+          strip.text.x = element_text(size=26),
+          strip.text.y = element_blank()) +
+    scale_y_continuous(limits = c(-150,150)) +
+    scale_alpha_identity() +
+    scale_fill_manual(values = cols) +
+    scale_color_manual(values = cols) +
+    ylab("Z-Score")
+```
+
+
+## Fig S6
+
+
+```{r heights}
+h <- readRDS(here("data","arm_heights.rds"))
+```
+
+
+```{r figs6, fig.height=30, fig.width=30, dev=c("png", "pdf")}
+tcga.legend <- cowplot::get_legend(plot)
+p2 <- plot +
+    guides(fill="none", color="none") +
+    ylab("")
+g1 <- ggplotGrob(p2)
+g1$heights <- h
+
+p3 <- zplot_cancer +
+    guides(color="none", fill="none")
+g2 <- ggplotGrob(p3)
+zscore.legend <- cowplot::get_legend(zplot_cancer)
+g2$heights <- h
+
+p4<-zplot_cancer_cuhk+
+    guides(color="none", fill="none")
+g3 <- ggplotGrob(p4)
+g3$heights <- h
+
+gl <- list(g1,g2,g3)
+m <- rbind(c(6, 6, 3, 6),
+           c(2, 1, 4, 5))
+
+##pdf("test.pdf",height=30,width=25)
+grid.newpage()
+vp <- viewport(x=unit(0.5, "npc"), y=unit(0.95, "npc"),
+               width=unit(0.98, "npc"), height=unit(0.95, 'npc'),
+               just=c("center", "top"))
+pushViewport(vp)
+grid.arrange(grobs=gl,ncol=3,
+             padding=unit(0, "lines"),
+             newpage=FALSE)
+upViewport()
+grid.text("US / EU Cohort", x=unit(0.50, "npc"), y=unit(0.975, "npc"),
+          gp=gpar(cex=3.5))
+grid.text("Hong Kong Cohort", x=unit(0.83, "npc"), y=unit(0.975, "npc"),
+          gp=gpar(cex=3.5))
+##dev.off()
+```

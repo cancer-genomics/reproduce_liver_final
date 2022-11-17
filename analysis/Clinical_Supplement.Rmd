@@ -1,0 +1,323 @@
+---
+title: "PreliminaryAnalysis"
+output: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(devtools)
+library(here)
+library(caret)
+library(recipes)
+library(pROC)
+#load_all("../../LUCAS/rlucas")
+```
+
+
+Import all data and format metadata
+```{r data_read}
+clinical<-read_csv(here("data","Clinical_Metadata_spreadsheet_8_11.csv"))
+delfi<-read_csv(here("data","two_test_plan","delfi-results_risk.csv"))
+data<-inner_join(delfi %>% select(id,score.delfi.gbm),clinical %>% select(-score.delfi),by=c("id"="id"))
+#write_csv(data,"Clinical_DELFI.csv")
+data<-data %>% filter(forveryclean==1)
+data<-data %>% mutate(group=ifelse(Disease=="HCC",data$BCLC,data$Disease))
+data<-data %>% mutate(group=if_else(Disease=="HCV"&Cirrhosisstatus=="yes","Cirrhosis",group))
+data<-data %>% mutate(group=if_else(Disease=="HBV","Viral Hepatitis",group))
+data<-data %>% mutate(group=if_else(Disease=="HCV"&Cirrhosisstatus=="no","Viral Hepatitis",group))
+data<-data %>% mutate(group=if_else(Disease=="HCV"&Cirrhosisstatus=="No","Viral Hepatitis",group))
+
+data<-data %>% mutate(sex_cat=ifelse(Sex==1,"Female","Male"))
+HCC<-data %>% filter(Disease=="HCC")
+HCC$group="All HCC"
+data<-rbind(data,HCC)
+data <- data %>% mutate(group=ifelse(group=="0","0/A",data$group))
+data <- data %>% mutate(group=ifelse(group=="A","0/A",data$group))
+
+data$group<-factor(data$group,levels=c("Non-cancer","Viral Hepatitis","Cirrhosis","All HCC","0/A","B","C"))
+data$log_delfi<-log10(data$score.delfi.gbm/(1-data$score.delfi.gbm))
+data<-data %>% mutate(log_delfi=ifelse(is.infinite(log_delfi),7.5,log_delfi))
+data<-data %>% filter(Disease != "HCC")
+
+
+
+```
+
+Age/Sex S2
+```{r}
+library(ggpubr)
+
+#pdf("../Figures/Victor_4_22/Age.pdf",height=5,width=5)
+a<-ggplot(data %>% filter(HCCStatus == "No"),aes(x=Age,y=score.delfi.gbm)) +xlim(c(48,76))+ylim(c(0,1))+ stat_cor(method="spearman")+theme_classic(base_size=18)+geom_jitter()+ylab("DELFI Score")
+#dev.off()
+
+#pdf("../Figures/Victor_4_22/Sex.pdf",height=5,width=5)
+s<-ggplot(data %>% filter(HCCStatus == "No"),aes(x=sex_cat,y=score.delfi.gbm))+ stat_compare_means(method="wilcox.test")+
+    geom_jitter(size=1, width=0.05, height=0.01, color="gray50") +
+    geom_boxplot(fill="steelblue", outlier.shape = NA,
+                 width=0.13, alpha=0.3) +
+    #scale_x_discrete(labels=n.disease$label) +
+    ylab("DELFI Score") +
+    theme_classic(base_size=18) + ##figure out how to
+    theme(panel.grid=element_blank()) +
+    xlab("")+ylim(c(-.01,1))
+#dev.off()
+
+#pdf("../../Figures/S1ab.pdf",height=5,width=10)
+cowplot::plot_grid(a,s,align=c("h"))
+#dev.off()
+
+```
+
+Race/Ethnicity S3
+```{r,fig.width=12, fig.height=10}
+data<-data %>% mutate(race_curated=if_else(`Race/Ethinicity` %in% c("African American","Black or African American"),"Black or African American",`Race/Ethinicity`))
+data<-data %>% mutate(race_curated=if_else(race_curated %in% c("Mixed Race,Hispanic","White or Caucasian,Hispanic","Unknown,Hispanic"),"Hispanic",race_curated))
+data<-data %>% mutate(race_curated=if_else(race_curated %in% c("Asian","Asian,Pacific Islander","Chinese","Unknown,Pacific Islander"),"Asian or Pacific Islander",race_curated))
+data<-data %>% mutate(race_curated=if_else(race_curated %in% c("Unknown","Other","Declined to Answer"),"Unavailable",race_curated))
+#data<-data %>% filter(race_curated != "Unavailable")
+
+data %>% group_by(group,Disease,Cirrhosisstatus,race_curated) %>% summarize(n())
+data$race_curated<-factor(data$race_curated,levels=c("White or Caucasian","Black or African American","Hispanic","Asian or Pacific Islander","Unavailable"))
+
+N <- data %>% filter(group == "Viral Hepatitis") %>%
+    group_by(race_curated) %>%
+    summarize(n=length(unique(id)),
+              groups=unique(`race_curated`),
+              .groups="drop") %>%
+    mutate(score.delfi=-0.05)
+N$groups<-factor(N$groups,levels=unique(data$race_curated))
+Nlabel <- tibble(groups=levels(N$groups)[1]) %>%
+    mutate(groups=factor(groups, levels(N$groups)),
+           label="n", score.delfi=-0.05,
+           category=levels(N$groups)[1],
+           category=factor(category, levels(N$groups)))
+
+#pdf("../Ethnicity_Combined_NCOnly.pdf",height=5,width=10)
+h<-ggplot(data %>% filter(group == "Viral Hepatitis"),aes(x=race_curated,y=score.delfi.gbm)) + geom_boxplot(fill="steelblue", outlier.shape = NA,width=0.13, alpha=0.3) + geom_jitter(size=1, width=0.05, height=0.01, color="gray50") + stat_compare_means(label.y = .95,label.x=2,method="kruskal.test") +
+    #scale_x_discrete(labels=n.disease$label) +
+    ylab("DELFI Score") +
+    theme_classic(base_size=18) + ##figure out how to
+    theme(panel.grid=element_blank(),axis.text = element_text(size = 11)) +
+    xlab("")+ ylim(c(-.05,1))+facet_wrap(vars(group))+
+  scale_x_discrete(labels=c("White or\n Caucasian","Black or\n African American","Hispanic","Asian or \n Pacific Islander","Unavailable"))+
+  geom_text(data=N, aes(label=n,y=score.delfi), size=4, position=position_dodge(0.5))+coord_cartesian(clip = "off")+
+    geom_text(data=Nlabel, aes(x=0.5, y=score.delfi,label="n"), size=4)
+
+
+
+N <- data %>% filter(group == "Cirrhosis") %>%
+    group_by(race_curated) %>%
+    summarize(n=length(unique(id)),
+              groups=unique(`race_curated`),
+              .groups="drop") %>%
+    mutate(score.delfi=-0.05)
+N$groups<-factor(N$groups,levels=unique(data$race_curated))
+Nlabel <- tibble(groups=levels(N$groups)[1]) %>%
+    mutate(groups=factor(groups, levels(N$groups)),
+           label="n", score.delfi=-0.05,
+           category=levels(N$groups)[1],
+           category=factor(category, levels(N$groups)))
+
+#pdf("../Ethnicity_Combined_NCOnly.pdf",height=5,width=10)
+h1<-ggplot(data %>% filter(group == "Cirrhosis"),aes(x=race_curated,y=score.delfi.gbm)) + geom_boxplot(fill="steelblue", outlier.shape = NA,width=0.13, alpha=0.3) + geom_jitter(size=1, width=0.05, height=0.01, color="gray50") + stat_compare_means(label.y = .95,label.x=2,method="kruskal.test") +
+    #scale_x_discrete(labels=n.disease$label) +
+    ylab("DELFI Score") +
+    theme_classic(base_size=18) + ##figure out how to
+    theme(panel.grid=element_blank(),axis.text = element_text(size = 11)) +
+    xlab("")+ ylim(c(-.05,1))+facet_wrap(vars(group))+scale_x_discrete(labels=c("White or\n Caucasian","Black or\n African American","Hispanic","Asian or \n Pacific Islander","Unavailable"))+geom_text(data=N, aes(label=n,y=score.delfi), size=4, position=position_dodge(0.5))+coord_cartesian(clip = "off")+
+    geom_text(data=Nlabel, aes(x=0.5, y=score.delfi,label="n"), size=4)
+
+
+
+library(cowplot)
+cowplot::plot_grid(h,h1,align=c("v"),axis=c("l"),nrow=1)
+#dev.off()
+```
+
+Child-Pugh S4
+```{r}
+a<-data %>% filter(group=='Cirrhosis')
+a$`Child-Pugh`<-as.numeric(a$`Child-Pugh`)
+ggplot(a,aes(x=`Child-Pugh`,y=score.delfi.gbm)) +theme_classic()+xlab("Child-Pugh Score")+ylab("DELFI Score")+ stat_cor(method="spearman",label.x.npc=c("center"),label.y.npc=c("top"))+geom_smooth(method="lm")+coord_cartesian(ylim=c(0,1),xlim=c(5,13))+geom_jitter()
+
+```
+
+BMI S5
+```{r}
+data$BMI<-as.numeric(data$BMI)
+ggplot(data %>% filter(group %in% c("Viral Hepatitis","Cirrhosis")),aes(x=BMI,y=score.delfi.gbm)) + geom_point()+facet_wrap(vars(group),nrow=1)+ theme_classic()+xlab("BMI")+ylab("DELFI Score")+ stat_cor(method="spearman",label.y=1.05)+geom_smooth(method="lm")+ylim(c(0,1.1))
+#dev.off()
+
+```
+
+Lesion size and number S7
+```{r}
+se<-read_csv(here("data","two_test_plan","delfi-results_risk.csv"))
+clinical_meta<-read_csv(here("data","Clinical_Metadata_spreadsheet_8_11.csv"))
+clinical_meta<-clinical_meta %>% mutate(lesion_num=if_else(`Lesion #`<=1,'<=1',`Lesion #`))
+clinical_meta<-clinical_meta %>% mutate(lesion_num=if_else(lesion_num=="2"|lesion_num=="3",'2-3',lesion_num))
+clinical_meta<-clinical_meta %>% mutate(lesion_num=if_else(`Lesion #`>3,'>3',lesion_num))
+clinical_meta<-clinical_meta %>% mutate(lesion_num=if_else(lesion_num=="10"|lesion_num=="inumerable"|lesion_num=="numerous"|lesion_num=="1 major and several satellite",'>3',lesion_num))
+
+clinical_meta<-clinical_meta %>% mutate(`Lesion diameter1`=if_else(`Lesion diameter1`==">10","11",`Lesion diameter1`))
+
+clinical_meta<-clinical_meta %>% mutate(lesion_size=if_else(`Lesion diameter1`>`Lesion diameter2`,clinical_meta$`Lesion diameter1`,clinical_meta$`Lesion diameter2`))
+
+clinical_meta<-clinical_meta %>% mutate(lesion_size=if_else(lesion_size=="Expansively infiltrative","21.8",lesion_size))
+clinical_meta$lesion_size<-as.double(clinical_meta$lesion_size)
+
+
+clinical_meta<-clinical_meta %>% mutate(lesion_size=if_else(lesion_size<2,0,lesion_size))
+clinical_meta<-clinical_meta %>% mutate(lesion_size=if_else(lesion_size>=2 & lesion_size<=5 ,1,lesion_size))
+clinical_meta<-clinical_meta %>% mutate(lesion_size=if_else(lesion_size>5 ,2,lesion_size))
+clinical_meta<-clinical_meta %>% mutate(CGID=if_else(id=="CGLI55P","CGLI55P_1",id))
+se<-left_join(se,clinical_meta %>% select(id,lesion_size,lesion_num,`Lesion #`,`Lesion diameter1`,`Lesion diameter2`,`Vascular Invasion`),by=c("id"="id"))
+
+lesion<-se %>% filter(Disease=="HCC")
+
+lesion<-lesion %>% mutate(lesion_size_real=if_else(lesion_size==0,"<2","nope"))
+lesion<-lesion %>% mutate(lesion_size_real=if_else(lesion_size==1,"2-5",lesion_size_real))
+lesion<-lesion %>% mutate(lesion_size_real=if_else(lesion_size==2,">5",lesion_size_real))
+
+lesion<-lesion %>% mutate(lesion_number_full=if_else(`Lesion #`=="inumerable"|`Lesion #`=="numerous"|`Lesion #`=="1 major and several satellite"| `Lesion #`=="multiple","11",`Lesion #`)) #other max is 10
+lesion<-lesion %>% mutate(diam1=if_else(`Lesion diameter1`=="expansively infiltrative","21.8",`Lesion diameter1`)) ##one more than largest number
+lesion<-lesion %>% mutate(diam2=if_else(`Lesion diameter2`=="expansively infiltrative","21.8",`Lesion diameter2`)) ##one more than largest number
+lesion<-lesion %>% mutate(diam1=if_else(`Lesion diameter1`==">10","11",diam1)) ##one more than largest number
+lesion$diam_ave<-(as.numeric(lesion$diam1) + as.numeric(lesion$diam2))/2
+lesion$lesion_number_full<-as.numeric(lesion$lesion_number_full)
+
+d<-ggplot(lesion,aes(x=diam_ave,y=score.delfi.gbm))+geom_jitter()+theme_classic()+ylab('DELFI Score')+xlab('Average Lesion Diameter')+geom_smooth(method="lm")+stat_cor(method="spearman",label.x.npc=c("center"),label.y.npc=c("bottom"))+
+coord_cartesian(ylim=c(0,1),xlim=c(1,13))+scale_x_continuous(breaks=seq(0,12,4), limits=c(0, 12))
+
+
+n<-ggplot(lesion,aes(x=lesion_number_full,y=score.delfi.gbm))+geom_jitter()+theme_classic()+ylab('DELFI Score')+xlab('Lesion Number')+geom_smooth(method="lm")+stat_cor(method="spearman",label.x.npc=c("center"),label.y=.1)+ylim(c(0,1.5))+coord_cartesian(ylim=c(0,1),xlim=c(1,11))
+
+cowplot::plot_grid(d,n,align=c("h"))
+
+```
+
+DDX S8
+```{r}
+clinical<-read_csv(here("data","Clinical_Metadata_spreadsheet_8_11.csv"))
+delfi<-read_csv(here("data","two_test_plan","delfi-results_risk.csv"))
+data<-inner_join(delfi %>% select(id,score.delfi.gbm),clinical %>% select(-score.delfi),by=c("id"="id"))
+#write_csv(data,"Clinical_DELFI.csv")
+data<-data %>% filter(forveryclean==1)
+data<-data %>% mutate(group=ifelse(Disease=="HCC",data$BCLC,data$Disease))
+data<-data %>% mutate(group=if_else(Disease=="HCV"&Cirrhosisstatus=="yes","Cirrhosis",group))
+data<-data %>% mutate(group=if_else(Disease=="HBV","Viral Hepatitis",group))
+data<-data %>% mutate(group=if_else(Disease=="HCV"&Cirrhosisstatus=="no","Viral Hepatitis",group))
+data<-data %>% mutate(group=if_else(Disease=="HCV"&Cirrhosisstatus=="No","Viral Hepatitis",group))
+
+data<-data %>% mutate(sex_cat=ifelse(Sex==1,"Female","Male"))
+HCC<-data %>% filter(Disease=="HCC")
+HCC$group="All HCC"
+data<-rbind(data,HCC)
+data <- data %>% mutate(group=ifelse(group=="0","0/A",data$group))
+data <- data %>% mutate(group=ifelse(group=="A","0/A",data$group))
+
+data$group<-factor(data$group,levels=c("Non-cancer","Viral Hepatitis","Cirrhosis","All HCC","0/A","B","C"))
+data$log_delfi<-log10(data$score.delfi.gbm/(1-data$score.delfi.gbm))
+data<-data %>% mutate(log_delfi=ifelse(is.infinite(log_delfi),7.5,log_delfi))
+
+dx<-data %>% filter(group %in% c("0/A","B")) 
+dx<-dx %>% mutate(ddx=if_else(Diangosis=="HBV"|Diangosis=="Hepatitis B (HBV)"|Diangosis=="HCV"|Diangosis=="Hepatitis C (HCV)"|Diangosis=="HCV, EtOH","Viral Hepatitis",dx$Diangosis))
+dx<-dx %>% mutate(ddx=if_else(Diangosis=="Autoimmune Hepatitis"|Diangosis=="Idiopathic"|Diangosis=="PBC","Other",dx$ddx))
+dx$ddx<-factor(dx$ddx,levels=c("Viral Hepatitis","EtOH","NAFLD","Other"))
+
+
+N <- dx %>%
+    group_by(ddx) %>%
+    summarize(n=length(unique(id)),
+              groups=unique(ddx),
+              .groups="drop") %>%
+    mutate(score.delfi.gbm=-0.05)
+
+Nlabel <- tibble(groups=levels(N$groups)[1]) %>%
+    mutate(groups=factor(groups, levels(N$groups)),
+           label="n", score.delfi.gbm=-0.05,
+           category=levels(N$groups)[1],
+           category=factor(category, levels(N$groups)))
+
+#my_comparisons=list(c("EtOH","Idiopathic"),c("EtOH","NAFLD"),c("EtOH","Viral Hepatitis"),c("NAFLD","Idiopathic"),c("Viral Hepatitis","Idiopathic"),c("NAFLD","Viral Hepatitis"))
+#pdf("../Ddx_Resectable.pdf",height=5,width=5)
+ggplot(dx,aes(x=ddx,y=`score.delfi.gbm`)) + stat_compare_means(label.y = 1.1,label.x=2,method="kruskal.test")+     
+    geom_jitter(size=1, width=0.05, height=0.01, color="gray50") +
+    geom_boxplot(fill="steelblue", outlier.shape = NA,
+                 width=0.13, alpha=0.3) + scale_y_continuous(breaks=seq(0, 1, 0.25), limits=c(-.05, 1.2))+
+    #scale_x_discrete(labels=n.disease$label) +
+    ylab("DELFI Score") +
+    theme_classic(base_size=18) + ##figure out how to
+    theme(panel.grid=element_blank()) +
+    xlab("")+geom_text(data=N, aes(label=n), size=4, position=position_dodge(0.5))+coord_cartesian(clip = "off")+
+    geom_text(data=Nlabel, aes(x=0.5, label="n"), size=4)
+#dev.off()
+
+```
+
+AFP S9
+```{r}
+
+```
+
+
+
+AFP 
+```{r}
+clinical<-read_csv(here("data","Clinical_Metadata_spreadsheet_8_11.csv"))
+delfi<-read_csv(here("data","two_test_plan","delfi-results_risk.csv"))
+data<-inner_join(delfi %>% select(id,score.delfi.gbm),clinical %>% select(-score.delfi),by=c("id"="id"))
+#write_csv(data,"Clinical_DELFI.csv")
+data<-data %>% filter(forveryclean==1)
+data<-data %>% mutate(group=ifelse(Disease=="HCC",data$BCLC,data$Disease))
+data<-data %>% mutate(group=if_else(Disease=="HCV"&Cirrhosisstatus=="yes","Cirrhosis",group))
+data<-data %>% mutate(group=if_else(Disease=="HBV","Viral Hepatitis",group))
+data<-data %>% mutate(group=if_else(Disease=="HCV"&Cirrhosisstatus=="no","Viral Hepatitis",group))
+data<-data %>% mutate(group=if_else(Disease=="HCV"&Cirrhosisstatus=="No","Viral Hepatitis",group))
+
+data<-data %>% mutate(sex_cat=ifelse(Sex==1,"Female","Male"))
+HCC<-data %>% filter(Disease=="HCC")
+HCC$group="All HCC"
+data<-rbind(data,HCC)
+data <- data %>% mutate(group=ifelse(group=="0","0/A",data$group))
+data <- data %>% mutate(group=ifelse(group=="A","0/A",data$group))
+
+data$group<-factor(data$group,levels=c("Non-cancer","Viral Hepatitis","Cirrhosis","All HCC","0/A","B","C"))
+data$log_delfi<-log10(data$score.delfi.gbm/(1-data$score.delfi.gbm))
+data<-data %>% mutate(log_delfi=ifelse(is.infinite(log_delfi),7.5,log_delfi))
+
+data$log_AFP<-log10(data$AFP)
+library(ggpubr)
+test<-data %>% filter(group == "All HCC")
+#I think this is the one we want
+ggplot(data %>% filter(group == "All HCC"),aes(x=AFP,y=score.delfi.gbm)) + geom_point() + theme_classic()+xlab("Log AFP")+ylab("DELFI Score") + stat_cor(method="spearman",label.y=1.1)+geom_vline(aes(xintercept=20),linetype="dashed")+geom_smooth(method="lm")+
+  scale_y_continuous(breaks=seq(0, 1, 0.25), limits=c(0, 1.2))+scale_x_log10(breaks=c(1,10,100,1000,10000,100000))+geom_hline(aes(yintercept=.26),linetype="dashed")
+
+```
+
+```{r,fig.width=8, fig.height=8}
+delfi1<-read_csv(here("data","two_test_plan","delfi-results_risk.csv"))
+#delfi2<-read_csv(here("data","two_test_plan","delfi-results_screen.csv")) #WE SUBMITTED THIS FIGURE READING IN THE WRONG MODEL. 10/9 VV says we will fix later. Below is now corrected.
+delfi2<-read_csv(here("data","two_test_plan","delfi-tf-results_screen.csv"))
+
+delfi1<-delfi1 %>% filter(Disease=="HCC")
+delfi2<-delfi2 %>% filter(Disease=="HCC")
+
+delfi1<- delfi1 %>% arrange(score.delfi.gbm)
+delfi2<- delfi2 %>% arrange(score.delfi.lr)
+delfi1$risk_rank<-c(1:nrow(delfi1))
+delfi2$screen_rank<-c(1:nrow(delfi2))
+
+data<-inner_join(delfi1 %>% select(id,type,risk_rank,BCLC),delfi2 %>% select(id,Disease,screen_rank))
+
+ggplot(data,aes(x=risk_rank,y=screen_rank))+geom_abline(slope=1,intercept=0,color="gray50")+geom_point()+ stat_cor(method="spearman")+theme_classic(base_size=12)+xlab("Surveillance Model DELFI Score")+ylab("Screening Model DELFI Score")
+
+
+
+```
+

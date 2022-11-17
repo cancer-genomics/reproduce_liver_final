@@ -1,0 +1,55 @@
+---
+title: "Figure2de"
+output: html_document
+date: "2022-09-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r DE}
+
+library(BSgenome.Hsapiens.UCSC.hg19)
+library(tidyverse)
+library(DOSE)
+library(enrichplot)
+library(here)
+tfmlengthandorder <- readRDS(here("data","liverlengthandorderall.rds"))
+gtest<- tfmlengthandorder %>% dplyr::select(`converted_alias.x`,max,`No vs. Yes`,TF.x) %>% distinct(`converted_alias.x`, .keep_all = TRUE) 
+gtest %>% dplyr::mutate(`liver_plasma` = order(order(max, decreasing=TRUE))) ->liverorder
+gtest$`No vs. Yes` -> ggene_sets
+gtest$`converted_alias.x` -> names(ggene_sets)
+ggene_list = sort(ggene_sets, decreasing = TRUE)
+gseDGN(ggene_list,scoreType = "pos", eps=0, minGSSize = 100, pvalueCutoff = 1) -> xgn
+enrichplot::dotplot(xgn, showCategory=15,orderBy="x", x="NES",decreasing=TRUE, size="GeneRatio")
+
+#png("../output/gsealiverresubwo.png")
+gseaplot2(xgn,title = paste0(xgn$Description[3],"\nAdjusted p-value=",format(xgn$p.adjust[3],digits=3)),geneSetID = 4,color = "red",ES_geom = "line")
+#dev.off()
+
+tfmlengthandorderl <- readRDS(here("data","lunglengthandorder.rds"))
+
+gtest<-  tfmlengthandorderl %>% dplyr::select(`converted_alias.x`,max,`cancer vs. healthy`,TF) %>% distinct(`converted_alias.x`, .keep_all = TRUE) 
+gtest %>% dplyr::mutate(`lung_plasma` = order(order(max, decreasing=TRUE))) ->lungorder
+gtest$`cancer vs. healthy` -> ggene_sets
+gtest$`converted_alias.x` -> names(ggene_sets)
+ggene_list = sort(ggene_sets, decreasing = TRUE)
+library(DOSE)
+gseDGN(ggene_list,scoreType = "pos", eps=0,maxGSSize = 5000, minGSSize = 100 ,pvalueCutoff = 1) -> xgnlung
+enrichplot::dotplot(xgnlung, showCategory=25,orderBy="x", x="NES",decreasing=TRUE, size="GeneRatio")
+gseaplot2(xgnlung,title = paste0(xgnlung$Description[1],"\nAdjusted p-value=",format(xgnlung$p.adjust[1],digits=3)),geneSetID = 3,color = "purple")
+
+#png("../output/gsealungadenoresub.png")
+gseaplot2(xgnlung,title = paste0(xgnlung$Description[1],"\nAdjusted p-value=",format(xgnlung$p.adjust[1],digits=3)),geneSetID = 3,color = "purple")
+#dev.off()
+
+```
+
+

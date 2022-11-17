@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Fig 4</title>
+
+<script src="site_libs/header-attrs-2.10/header-attrs.js"></script>
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/master/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">foda2022</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Fig 4</h1>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2022-11-17
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 1
+</p>
+<p>
+<strong>Knit directory:</strong> <code>foda2022/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version
+1.6.2). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges">
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted
+changes </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguncommittedchanges"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The R Markdown is untracked by Git. To know which version of the R
+Markdown file created these results, you’ll want to first commit it to
+the Git repo. If you’re still working on the analysis, you can ignore
+this warning. When you’re finished, you can run
+<code>wflow_publish</code> to commit the R Markdown file and build the
+HTML.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20221117code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20221117)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20221117code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20221117)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrong94de5f7">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong> 94de5f7
+</a>
+</p>
+</div>
+<div id="strongRepositoryversionstrong94de5f7"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version 94de5f7.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    code/.DS_Store
+    Ignored:    data/.DS_Store
+    Ignored:    output/.DS_Store
+
+Untracked files:
+    Untracked:  LICENSE
+    Untracked:  analysis/1a.Rmd
+    Untracked:  analysis/1bc.Rmd
+    Untracked:  analysis/3a.Rmd
+    Untracked:  analysis/3b_c.Rmd
+    Untracked:  analysis/4a.Rmd
+    Untracked:  analysis/4b_c.Rmd
+    Untracked:  analysis/4d.Rmd
+    Untracked:  analysis/Clinical_Supplement.Rmd
+    Untracked:  analysis/Fig2AB.Rmd
+    Untracked:  analysis/Fig2C.Rmd
+    Untracked:  analysis/Fig2DE.Rmd
+    Untracked:  analysis/Rob_AFP.Rmd
+    Untracked:  analysis/S1.Rmd
+    Untracked:  analysis/S10_11.Rmd
+    Untracked:  analysis/S6.Rmd
+    Untracked:  analysis/Text_Numbers_Submitted.Rmd
+    Untracked:  analysis/figS12.Rmd
+    Untracked:  code/Cirr_score.Rmd
+    Untracked:  code/Cirr_score_aa.Rmd
+    Untracked:  code/Model_Lo_Val.Rmd
+    Untracked:  code/SensSpec.Rmd
+    Untracked:  code/TF.rmd
+    Untracked:  code/feature_importance.Rmd
+    Untracked:  code/feature_importanceTF.Rmd
+    Untracked:  code/gsearesuball.Rmd
+    Untracked:  code/gsearesubatrisk.Rmd
+    Untracked:  code/hilistallcohort.txt
+    Untracked:  code/liver.tools/
+    Untracked:  code/plot-roc.r
+    Untracked:  code/prepare_tcga_plot_data.r
+    Untracked:  code/sumcomb.Rmd
+    Untracked:  code/supplementalgsearesub.Rmd
+    Untracked:  code/tfbs_coverage-v1-01val.R
+    Untracked:  code/tfbsmakerhigh.sh
+    Untracked:  code/tfbsmakerlowwo.sh
+    Untracked:  code/tfhilistall.txt
+    Untracked:  code/tfhilistatrisk.txt
+    Untracked:  code/tflowlistall.txt
+    Untracked:  code/tflowlistatrisk.txt
+    Untracked:  data/Alltissuetyperesuball.rds
+    Untracked:  data/Alltissuetyperesubatrisk.rds
+    Untracked:  data/Clinical_Metadata_spreadsheet_8_11.csv
+    Untracked:  data/Clinical_Metadata_spreadsheet_8_11.xlsx
+    Untracked:  data/LUCAS_metadata.xlsx
+    Untracked:  data/TCGA/
+    Untracked:  data/TF_names_ref.csv
+    Untracked:  data/arm_heights.rds
+    Untracked:  data/cohort_rel_cov2.txt
+    Untracked:  data/delfi_features.csv
+    Untracked:  data/high_mean
+    Untracked:  data/lengthnameTF.rds
+    Untracked:  data/liverlengthandorderall.rds
+    Untracked:  data/liverlengthandorderatrisk.rds
+    Untracked:  data/long_bins.csv
+    Untracked:  data/long_bins_val.csv
+    Untracked:  data/low_mean
+    Untracked:  data/lunglengthandorder.rds
+    Untracked:  data/lungn
+    Untracked:  data/processed.rds
+    Untracked:  data/sample_annotation_heatmap.csv
+    Untracked:  data/simulation.xls
+    Untracked:  data/simulation_new_aa.xls
+    Untracked:  data/two_test_plan/
+    Untracked:  data/val_preds.csv
+    Untracked:  data/validation_features.csv
+    Untracked:  data/validation_meta.csv
+    Untracked:  data/validation_rel_cov.txt
+    Untracked:  output/feature_importance.Rmd/
+    Untracked:  output/feature_importance_TF.Rmd/
+    Untracked:  output/word_docs/
+
+Unstaged changes:
+    Modified:   README.md
+    Modified:   analysis/about.Rmd
+    Modified:   analysis/index.Rmd
+    Modified:   analysis/license.Rmd
+    Modified:   code/README.md
+    Modified:   data/README.md
+    Modified:   output/README.md
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+There are no past versions. Publish this analysis with
+<code>wflow_publish()</code> to start tracking its development.
+</p>
+<hr>
+</div>
+</div>
+</div>
+<p>Read in Noushin’s data for TCGA figure</p>
+<pre class="r"><code>fig.data &lt;- readRDS(here(&#39;data&#39;, &#39;TCGA&#39;, &#39;fig2c_p2_data.rds&#39;))</code></pre>
+<div id="tcga-copy-number" class="section level2">
+<h2>TCGA copy number</h2>
+<p>TCGA figure panel – problems, chromosome widths, making the panel
+match size of one facet in z-score panel</p>
+<pre class="r"><code>setDT(fig.data)
+fig.data[,bin:=as.factor(rev(bin))][]</code></pre>
+<pre><code>     seqnames      pos arm bin   variable       value disease change
+  1:     chr1  7500000  1p 473 liver.Loss -0.27419355   liver   Loss
+  2:     chr1 17500000  1p 472 liver.Loss -0.24193548   liver   Loss
+  3:     chr1 22500000  1p 471 liver.Loss -0.24462366   liver   Loss
+  4:     chr1 27500000  1p 470 liver.Loss -0.24731183   liver   Loss
+  5:     chr1 32500000  1p 469 liver.Loss -0.20430108   liver   Loss
+ ---                                                                
+942:    chr22 27500000 22q   5 liver.Gain  0.04301075   liver   Gain
+943:    chr22 32500000 22q   4 liver.Gain  0.04301075   liver   Gain
+944:    chr22 37500000 22q   3 liver.Gain  0.05107527   liver   Gain
+945:    chr22 42500000 22q   2 liver.Gain  0.05645161   liver   Gain
+946:    chr22 47500000 22q   1 liver.Gain  0.00000000   liver   Gain</code></pre>
+<pre class="r"><code>fig.data$disease&lt;-&quot;TCGA Liver Cancers\n(n = 372)&quot;
+plot &lt;- fig.data %&gt;%
+    mutate(disease=&quot;TCGA Liver Cancers\n(n = 372)&quot;) %&gt;%
+    ggplot(aes(x=value, y=bin, color=change, fill=change)) +
+    facet_grid(arm~disease, scales = &#39;free_y&#39;) + ##,
+    ##           switch = &#39;y&#39;)+#, space = &#39;free&#39;)+
+    ##facet_wrap(~arm, ncol=1, scales=&quot;free_y&quot;) + ##
+    geom_col() +
+    scale_x_continuous() +
+    scale_fill_brewer(palette = &#39;Set1&#39;)+
+    scale_color_brewer(palette = &#39;Set1&#39;)+
+    theme_minimal(base_size=24) +
+    theme(strip.text.y = element_text(angle = 0,
+                                      hjust = 0.5,
+                                      vjust = 0.5,
+                                      size=20),
+          strip.text.x=element_text(size=20),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          panel.grid =  element_blank(),
+          legend.title = element_blank(),
+          legend.position=&quot;bottom&quot;) +
+    xlab(&quot;Proportion of\ncases with CNV&quot;) +
+    ylab(&quot;Chromosome Arm&quot;)</code></pre>
+</div>
+<div id="liver-study-z-scores" class="section level2">
+<h2>Liver study z-scores</h2>
+<p>The z-score’s with our data panel. Problems – chromosome width.</p>
+<pre class="r"><code>features &lt;- read_csv(here(&quot;data&quot;,&quot;delfi_features.csv&quot;),
+                     show_col_types=FALSE)
+meta &lt;- read_csv(here(&quot;data&quot;, &quot;Clinical_Metadata_spreadsheet_8_11.csv&quot;),
+                 show_col_types=FALSE)</code></pre>
+<pre><code>New names:
+* ...2 -&gt; ...3
+* Personnel...23 -&gt; Personnel...27
+* Personnel...30 -&gt; Personnel...34</code></pre>
+<pre class="r"><code>meta$grp_id&lt;-sapply(strsplit(meta$id,&quot;P&quot;),&quot;[&quot;,1)
+
+d_c&lt;-meta %&gt;% filter(forveryclean==1 &amp; Disease == &quot;Non-cancer&quot;)
+d_c$cat&lt;-&quot;Danish Cocos&quot;
+cirr&lt;-meta %&gt;% filter(forveryclean==1 &amp; Disease == &quot;Cirrhosis&quot;)
+cirr$cat&lt;-&quot;Cirrhosis&quot;
+hbv&lt;-meta %&gt;% filter(forveryclean==1 &amp; Disease == &quot;HBV&quot;)
+hbv$cat&lt;-&quot;HBV&quot;
+hcv&lt;-meta %&gt;% filter(forveryclean==1 &amp; Disease == &quot;HCV&quot;)
+hcv$cat&lt;-&quot;HCV&quot;
+hcc&lt;-meta %&gt;% filter(forveryclean==1 &amp; Disease == &quot;HCC&quot;)
+hcc$cat&lt;-&quot;HCC&quot;
+d1&lt;-rbind(hcc,cirr,hbv,d_c,hcv)
+d1&lt;- d1 %&gt;% mutate(cat=if_else(Disease==&quot;HCV&quot;|Disease==&quot;HBV&quot; &amp; Cirrhosisstatus==&quot;no&quot;,&quot;Viral Hepatitis&quot;,cat))
+d1&lt;- d1 %&gt;% mutate(cat=if_else(Disease==&quot;HCV&quot; &amp; Cirrhosisstatus==&quot;yes&quot;,&quot;Cirrhosis&quot;,cat))
+d1&lt;- d1 %&gt;% mutate(cat=if_else(Disease==&quot;Non-cancer&quot;,&quot;Non-cancer&quot;,cat))
+meta&lt;-d1
+meta$Disease&lt;-meta$cat
+meta&lt;-meta %&gt;% mutate(`HCC Status`=if_else(`HCCStatus`==&quot;Yes&quot;,&quot;Yes&quot;,&quot;No&quot;))
+
+
+cols &lt;- brewer.pal(7,&quot;Set1&quot;)
+cols[3] &lt;- cols[4]
+features2 &lt;- zscore_features(features, meta) %&gt;%
+    select(id, hcc_status, Disease, Arm,
+           z, root2, root3, y, colors, transp)
+###YOU ARE HERE AFTER LUNCH!!!
+ns &lt;- features2 %&gt;%
+    group_by(hcc_status) %&gt;%
+    summarize(n=length(unique(id))) %&gt;%
+    mutate(label=paste0(hcc_status, &quot;\n(n = &quot;, n, &quot;)&quot;))
+ns &lt;- setNames(ns$label, ns$hcc_status)
+
+zplot_cancer &lt;- features2 %&gt;%
+    ggplot(aes(x=y, y=z, color=colors, alpha=transp)) +
+    geom_point(size=5) +
+    facet_grid(Arm ~ hcc_status, scales = &#39;free_y&#39;,labeller=labeller(hcc_status=ns)) +
+    coord_flip() +
+    theme_minimal(base_size=24) +
+    theme(strip.text.y.left = element_text(angle = 0,
+                                           hjust = 0.5,
+                                           vjust = 0.5),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+
+          panel.grid =  element_blank(),
+          plot.title = element_blank(),
+          legend.title = element_blank(),
+          axis.title.y=element_blank(),
+          legend.position = &quot;bottom&quot;,
+          strip.text.y = element_blank()) +
+    scale_y_continuous(limits = c(-150,150)) +
+    scale_alpha_identity() +
+    scale_fill_manual(values = cols) +
+    scale_color_manual(values = cols) +
+    ylab(&quot;Z-Score&quot;)</code></pre>
+<p>Adding together the TCGA and z-score panel – problems – chromosome
+width, size of TCGA panel, not yet stacked with feature importance
+panel.</p>
+<pre class="r"><code>#pdf(&quot;test.pdf&quot;)
+cowplot::plot_grid(plot,zplot_cancer,nrow=1,align=&quot;v&quot;,axis=&quot;l&quot;)
+#dev.off() #</code></pre>
+</div>
+<div id="feature-importance" class="section level2">
+<h2>Feature importance</h2>
+<p>Feature importance panel</p>
+<pre class="r"><code>results&lt;-readRDS(here(&quot;output&quot;,&quot;feature_importance_TF.Rmd&quot;,
+                     &quot;loadings_TF_screening.rds&quot;))
+pd &lt;- results[[&quot;pd&quot;]]
+sc &lt;- results[[&quot;sc&quot;]]
+#---------------- now make plots -----------------###
+                                        # visualize feature by PC heatmap ##
+pc.labels &lt;- c(&quot;PC1\n&quot;, &quot;PC2\n&quot;, &quot;PC3\n&quot;) %&gt;%
+    setNames(1:3)
+heatmap &lt;- pd %&gt;%
+    ggplot(aes(x = pc.id, y = bin.id)) +
+    facet_grid(arm ~ pc.id, scales = &#39;free&#39;,
+               switch = &#39;y&#39;, space = &#39;free&#39;,
+               labeller=labeller(pc.id=pc.labels))+
+    geom_tile(aes(fill = value)) +
+    scale_fill_distiller(palette = &#39;RdBu&#39;) +
+    scale_y_continuous(trans = &#39;reverse&#39;) +
+    theme_minimal(base_size=24) +
+    labs(x = &#39;Principal components\nof fragmentation profiles&#39;, y = &#39;&#39;, fill = &#39;Value&#39;) +
+    theme(axis.text.x=element_text(color=&quot;white&quot;),
+          strip.text.y=element_blank(),
+          strip.text.x=element_text(size=26),
+          axis.text.y = element_text(color=&quot;white&quot;),
+          axis.title.y=element_text(color=&quot;white&quot;),
+          axis.ticks = element_blank(),
+          panel.grid =  element_blank(),
+          legend.position = &#39;none&#39;) +
+    ylab(&quot;Something&quot;)</code></pre>
+<pre class="r"><code>ta &lt;- top_annotation(sc)
+
+### NEW STUFF
+#results2&lt;-readRDS(here(&quot;output&quot;,&quot;feature_importance_TF.Rmd&quot;,
+                     #&quot;loadings_TF.rds&quot;))
+#sc2 &lt;- results2[[&quot;sc&quot;]]
+#sc2&lt;-sc2 %&gt;% filter(features %in% c(&quot;PC 1&quot;,&quot;PC 2&quot;, &quot;PC 3&quot;)) 
+
+#ta$model&lt;-&quot;DELFI&quot;
+#ta$pc.id&lt;-factor(ta$pc.id,levels=c(2,3,1,2.1,3.1,1.1))
+#t&lt;-tibble(pc.id=c(2,3,1),abs.value=sc2$abs.value,sign.value=sc2$sign.value,x=c(1,1,1),model=c(&quot;DELFI+TF&quot;,&quot;DELFI+TF&quot;,&quot;DELFI+TF&quot;),arm=c(1,1,1))
+#ta&lt;-as_tibble(rbind(ta,t))
+
+cols &lt;- c(&#39;#0571b0&#39;, &#39;#ca0020&#39;, &#39;#999999&#39;)
+names(cols) &lt;- c(&#39;-1&#39;, &#39;1&#39;, NA)
+top.annot &lt;- ta %&gt;%
+    ggplot(aes(x = pc.id, y = abs.value, colour = sign.value)) +
+    facet_grid(arm ~ pc.id, scales = &#39;free&#39;,
+                   switch = &#39;y&#39;, space = &#39;free&#39;) +
+    geom_point(size = 5) +
+    geom_segment(aes(x = pc.id,
+                     xend = pc.id,
+                     y = abs.value, yend = 0),
+                 size=2) +
+    theme_minimal(base_size=24) +
+    ylab(&quot;Log odds ratio&quot;) +
+    xlab(&quot;&quot;) +
+    theme(axis.text.x=element_text(color=&quot;white&quot;),
+          strip.text.y=element_blank(),
+          axis.line.x=element_line(color=&quot;gray&quot;),
+          axis.ticks.x=element_line(color=&quot;gray&quot;),
+          axis.ticks = element_blank(),
+          panel.grid =  element_blank(),
+          legend.position = &#39;none&#39;) +
+##    theme(panel.grid=element_blank(),
+##          strip.text.y = element_blank(),
+
+##          strip.text.x = element_blank(),
+##          axis.text.x = element_blank(),
+##          axis.ticks = element_blank(),
+##          panel.border = element_rect(color = &quot;white&quot;,
+##                                      fill = NA, size = 0.2),
+##          legend.position = &#39;none&#39;) +
+    scale_color_manual(values = cols, na.value = &#39;#999999&#39;)</code></pre>
+<pre class="r"><code>bins5mb &lt;- read_csv(here(&quot;data&quot;,&quot;long_bins.csv&quot;),
+                    show_col_types=FALSE)</code></pre>
+<pre><code>New names:
+* `` -&gt; ...1</code></pre>
+<pre class="r"><code>sa &lt;- side_annotation(pd, sc, bins5mb)
+
+
+#sa2 &lt;- results2[[&quot;sc&quot;]]
+#sa2&lt;-sa2 %&gt;% filter(! features %in% c(&quot;PC 1&quot;,&quot;PC 2&quot;, &quot;PC 3&quot;,&quot;TF_pc_1&quot;)) 
+#pd2 &lt;- results2[[&quot;pd&quot;]]
+#sa_temp &lt;- side_annotation(pd2, sc2, bins5mb)$arm.imp
+#x &lt;- strsplit(as.character(sa2$features), &quot; &quot; )
+
+#sa2$arm&lt;-sapply( x, &quot;[&quot;, 2 )
+#sa2&lt;-left_join(sa_temp %&gt;% select(-abs.value),sa2 %&gt;% select(arm,abs.value,scaled_coefs),by=&quot;arm&quot;)
+#sa2 &lt;- sa2 %&gt;% mutate(abs.value=if_else(is.na(abs.value),0,abs.value))
+#sa2&lt;-sa2 %&gt;% mutate(sign.value=sign(scaled_coefs))
+#sa2 &lt;- sa2 %&gt;% select(-scaled_coefs)
+
+bl &lt;- sa[[&quot;bl&quot;]]
+arm.imp &lt;- sa[[&quot;arm.imp&quot;]]
+#arm.imp$model&lt;-&quot;DELFI&quot;
+#sa2$model&lt;-&quot;DELFI+TF&quot;
+#arm.imp&lt;-rbind(arm.imp,sa2)
+right.annot &lt;- bl %&gt;%
+    ggplot(aes(x = x, y = bin.id)) +
+    geom_point(color = &#39;white&#39;) +
+    facet_grid(arm ~ pc.id,
+               scales = &#39;free&#39;,
+               switch = &#39;y&#39;, space = &#39;free&#39;) +
+    theme_minimal(base_size=24) +
+    geom_point(data = arm.imp,
+               aes(x = abs.value,
+                   y = bin.id, color = sign.value),
+               size=5) +
+    geom_segment(data = arm.imp,
+                 aes(x = abs.value, xend = 0,
+                     y = bin.id, yend = bin.id,
+                     color = sign.value),
+                 size=2) +
+    scale_color_manual(values = cols, na.value = &#39;#999999&#39;) +
+    scale_y_continuous(breaks = c(0,2,4,6)) +
+    labs(x = &#39;Log odds\nratio&#39;, y = &#39;&#39;, color = &#39;&#39;) +
+    theme(strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          panel.border = element_blank(),
+          panel.grid=element_blank(),
+          legend.position = &#39;none&#39;)</code></pre>
+<pre class="r"><code>sa &lt;- tf_annotation(pd, sc, bins5mb)
+sa&lt;-sa[[&quot;arm.imp&quot;]]
+sa&lt;-sa %&gt;%arrange(abs.value)
+sa$arm&lt;-factor(sa$arm,levels=sa$arm)
+tf_annotation&lt;-ggplot(sa,aes(x=arm,y=abs.value,color=sign.value))+geom_point(size=5)+geom_segment(data=sa,aes(x=arm,xend=arm,y=abs.value,yend=0,color=sign.value),size=2)+ scale_color_manual(values = cols, na.value = &#39;#999999&#39;) +theme_minimal(base_size=24)+ labs(y = &#39;Log odds\nratio&#39;, x = &#39;TFBS&#39;, color = &#39;&#39;) +
+    theme(strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.text.y = element_text(size=30),
+          axis.ticks = element_blank(),
+          panel.border = element_blank(),
+          panel.grid=element_blank(),
+          legend.position = &#39;none&#39;)+coord_flip() </code></pre>
+</div>
+<div id="fig-4" class="section level2">
+<h2>Fig 4</h2>
+<p>Assembling the 3 pieces of the feature importance figure into one
+panel</p>
+<pre class="r"><code>hmap &lt;- ggplotGrob(heatmap)
+z.coef &lt;- ggplotGrob(right.annot)
+pc.coef &lt;- ggplotGrob(top.annot)
+h &lt;- hmap$heights
+## I think these widths correspond to the panels
+ix &lt;- seq(from=8, by=2, length.out=39)
+## make logical
+is_arm &lt;- seq_along(h) %in% ix
+h2 &lt;- h[is_arm]
+size &lt;- map_dbl(h2, function(x) unlist(x)[[1]])
+## The widths less than 100 might be too small
+is2small &lt;- size &lt; 12
+h2[is2small] &lt;- unit(12, &quot;null&quot;)
+h[is_arm] &lt;- h2
+z.coef$heights = h
+hmap$heights &lt;- h
+hmap$widths &lt;- pc.coef$widths
+#saveRDS(h, file=&quot;../data/arm_heights.rds&quot;)</code></pre>
+<pre class="r"><code>##pc.coef$widths = hmap$widths
+tf&lt;-ggplotGrob(tf_annotation)
+tf$widths&lt;-z.coef$widths
+gl &lt;- list(pc.coef,
+           hmap,
+           z.coef,
+           tf)
+#gl &lt;- list(pc.coef,
+#           hmap,
+#           z.coef,
+#           nullGrob())
+
+m &lt;- rbind(c(1, 4),
+           c(2, 3))
+grid.arrange(grobs=gl,
+             layout_matrix=m,
+             heights=c(1, 7),
+             widths=c(4, 1),
+             padding=unit(0, &quot;lines&quot;))</code></pre>
+<pre class="r"><code>tf&lt;-ggplotGrob(tf_annotation)
+#tf$widths&lt;-z.coef$widths
+#tf$heights&lt;-z.coef$heights
+tcga.legend &lt;- cowplot::get_legend(plot)
+p2 &lt;- plot +
+    guides(fill=&quot;none&quot;, color=&quot;none&quot;) +
+    ylab(&quot;&quot;)
+g1 &lt;- ggplotGrob(p2)
+g1$heights &lt;- h
+
+zscore.legend &lt;- cowplot::get_legend(zplot_cancer)
+p3 &lt;- zplot_cancer +
+    guides(color=&quot;none&quot;, fill=&quot;none&quot;)
+g2 &lt;- ggplotGrob(p3)
+g2$heights &lt;- h
+gl &lt;- list(g1,
+           g2,
+           pc.coef,
+           hmap,
+           z.coef,
+           nullGrob(),tf)
+m &lt;- rbind(c(6, 6, 3, 6,6),
+           c(1, 2, 4, 5,7))
+grid.arrange(grobs=gl,
+             layout_matrix=m,
+             heights=c(1, 7),
+             widths=c(2.7, 4, 4, 2.7,2.3),
+             padding=unit(0, &quot;lines&quot;)) ##</code></pre>
+<p><img src="figure/3b_c.Rmd/fig4-1.png" width="2688" style="display: block; margin: auto;" /></p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.0.5 (2021-03-31)
+Platform: x86_64-apple-darwin17.0 (64-bit)
+Running under: macOS Big Sur 10.16
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] grid      stats     graphics  grDevices utils     datasets  methods  
+[8] base     
+
+other attached packages:
+ [1] liver.tools_0.0.0.9000 ggstance_0.3.5         here_1.0.1            
+ [4] gridExtra_2.3          RColorBrewer_1.1-2     data.table_1.14.0     
+ [7] forcats_0.5.1          stringr_1.4.0          dplyr_1.0.7           
+[10] purrr_0.3.4            readr_2.0.1            tidyr_1.1.3           
+[13] tibble_3.1.4           ggplot2_3.3.5          tidyverse_1.3.1       
+[16] workflowr_1.6.2       
+
+loaded via a namespace (and not attached):
+ [1] fs_1.5.0          usethis_2.0.1     bit64_4.0.5       lubridate_1.7.10 
+ [5] devtools_2.4.2    httr_1.4.2        rprojroot_2.0.2   tools_4.0.5      
+ [9] backports_1.2.1   bslib_0.3.0       utf8_1.2.2        R6_2.5.1         
+[13] DBI_1.1.1         colorspace_2.0-2  withr_2.4.2       tidyselect_1.1.1 
+[17] prettyunits_1.1.1 processx_3.5.2    bit_4.0.4         compiler_4.0.5   
+[21] git2r_0.28.0      cli_3.0.1         rvest_1.0.1       xml2_1.3.2       
+[25] desc_1.3.0        labeling_0.4.2    sass_0.4.0        scales_1.1.1     
+[29] callr_3.7.0       digest_0.6.27     rmarkdown_2.10    pkgconfig_2.0.3  
+[33] htmltools_0.5.2   sessioninfo_1.1.1 highr_0.9         dbplyr_2.1.1     
+[37] fastmap_1.1.0     rlang_0.4.11      readxl_1.3.1      rstudioapi_0.13  
+[41] farver_2.1.0      jquerylib_0.1.4   generics_0.1.0    jsonlite_1.7.2   
+[45] vroom_1.5.4       magrittr_2.0.1    Rcpp_1.0.7        munsell_0.5.0    
+[49] fansi_0.5.0       lifecycle_1.0.0   stringi_1.7.4     yaml_2.2.1       
+[53] plyr_1.8.6        pkgbuild_1.2.0    parallel_4.0.5    promises_1.2.0.1 
+[57] crayon_1.4.1      cowplot_1.1.1     haven_2.4.3       hms_1.1.0        
+[61] knitr_1.33        ps_1.6.0          pillar_1.6.2      pkgload_1.2.1    
+[65] reprex_2.0.1      glue_1.4.2        evaluate_0.14     remotes_2.4.0    
+[69] modelr_0.1.8      vctrs_0.3.8       tzdb_0.1.2        httpuv_1.6.2     
+[73] testthat_3.0.4    cellranger_1.1.0  gtable_0.3.0      assertthat_0.2.1 
+[77] cachem_1.0.6      xfun_0.25         broom_0.7.9       later_1.3.0      
+[81] memoise_2.0.0     ellipsis_0.3.2   </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

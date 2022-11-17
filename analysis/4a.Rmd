@@ -1,0 +1,196 @@
+---
+title: "R Notebook"
+output: html_document
+---
+
+```{r packages}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(pROC)
+library(grid)
+library(gridExtra)
+library(here)
+library(RColorBrewer)
+```
+
+# ROC curves
+
+`score.all` column is from DELFI model trained on HCC vs. cirrhotic+healthy --- inputs are z-scores + ratios (with PCA).
+
+
+```{r}
+se<-read_csv(here("data","two_test_plan","delfi-tf-results_screen.csv"))
+se2<-read_csv(here("data","two_test_plan","delfi-results_risk.csv"))
+se$model<-"Screening Model"
+se2$model <- "Surveillance Model"
+se<-rbind(se,se2)
+se<-se %>% mutate(score=if_else(model=="Screening Model",score.delfi.lr,score.delfi.gbm))
+meta<-read_csv(here("data","Clinical_Metadata_spreadsheet_8_11.csv"))
+meta<-meta %>% mutate(type=if_else(HCCStatus=="Yes","Yes","No"))
+meta$grp_id<-sapply(strsplit(meta$id,"P"),"[",1)
+
+d_c<-meta %>% filter(forveryclean==1 & Disease == "Non-cancer")
+d_c$cat<-"Danish Cocos"
+cirr<-meta %>% filter(forveryclean==1 & Disease == "Cirrhosis")
+cirr$cat<-"Cirrhosis"
+hbv<-meta %>% filter(forveryclean==1 & Disease == "HBV")
+hbv$cat<-"HBV"
+hcv<-meta %>% filter(forveryclean==1 & Disease == "HCV")
+hcv$cat<-"HCV"
+hcc<-meta %>% filter(forveryclean==1 & Disease == "HCC")
+hcc$cat<-"HCC"
+d1<-rbind(hcc,cirr,hbv,d_c,hcv)
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV"|Disease=="HBV" & Cirrhosisstatus=="no","Viral\n Hepatitis",cat))
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV" & Cirrhosisstatus=="yes","Cirrhosis",cat))
+#d1<- d1 %>% mutate(cat=if_else(Disease=="HCV"|Disease=="HBV"|Disease=="Cirrhosis","Non-cancer",cat))
+
+d1<- d1 %>% mutate(cat=if_else(cat=="Danish Cocos","Non-cancer",cat))
+
+d1$Disease<-d1$cat
+
+
+clinical_meta<-d1
+se<-left_join(se %>% select(-Disease),clinical_meta %>% select(id,Disease),by=c("id"="id"))
+
+```
+
+
+# Distribution of scores
+
+```{r score_distribution}
+#DELFI SCORE BY STATUS FIGURE
+#nc.label <- "Non-cancer &\nnon-cirrhotic"
+colors <- brewer.pal(3, "Dark2")
+colors<-colors[1:2]
+names(colors) <- c("Screening Model","Surveillance Model")
+
+d.levels <- c("Non-cancer","Viral\n Hepatitis", "Cirrhosis", "0","A","B","C")
+stage<-se %>% filter(BCLC != "N")
+stage$Disease<-stage$BCLC
+dat<-rbind(se %>% filter(Disease != "HCC"),stage)
+dat3 <- dat %>%
+    mutate(Disease=factor(Disease, d.levels)) %>% select(id,model,Disease,score)
+
+n.disease <- dat3 %>%
+    group_by(Disease,model) %>%
+    summarize(n=n()) %>%
+    mutate(label=Disease)
+#n.disease<-n.disease %>% filter(model=="Surveillance Model"|Disease=="Non-cancer")
+
+
+dat3 <- dat3 %>% mutate(group=if_else(Disease %in% c("0","A","B","C"),"Cancer Stages","Non-Cancer"))
+```
+
+
+```{r panelA, fig.width=15, fig.height=7, dev=c("png", "pdf")}
+A <- dat3 %>%
+    ggplot(aes(Disease, score, fill=model)) +
+    geom_jitter(aes(fill=model),
+               pch=21, alpha=0.5, size=0.7,
+               color="gray",width=.15) +
+    geom_boxplot(outlier.shape=NA, alpha=0.3,
+                 width=0.3,
+                 position=position_dodge(0.5)) +
+    theme_classic(base_size=20) + facet_wrap(vars(model),scales="free_x",nrow(1)) +
+    theme(panel.grid=element_blank(),
+          axis.text.x=element_text(size=12),
+          ##legend.position="bottom",
+          ##legend.justification=c("center", "bottom"),
+          strip.background=element_blank(),
+          strip.placement="outside") +
+    scale_y_continuous(expand=expansion(add=c(0.04, 0.1)),
+                       breaks=seq(0, 1, by=0.2),
+                       labels=as.character(seq(0, 1, by=0.2))) +
+    xlab("") +
+    ylab("DELFI score") +
+    scale_fill_manual(values=colors) +
+    ##guides(fill=guide_legend(title=""), color=guide_legend(title="")) +
+    guides(fill="none", color="none")
+
+N <- dat3 %>%
+    group_by(Disease,model) %>% #filter(model=="Surveillance Model"|Disease=="Non-cancer") %>%
+    summarize(n=length(unique(id)),
+              groups=unique(Disease),
+              .groups="drop") %>%
+    mutate(score=-0.05)
+
+Nlabel <- tibble(groups=levels(N$groups)[1]) %>%
+    mutate(groups=factor(groups, levels(N$groups)),
+           label="n", score=-0.05,
+           category=levels(N$groups)[1],
+           category=factor(category, levels(N$groups)))
+
+N$score<- -.05
+Nlabel$score<- -.05
+Nlabel$model<-"Screening Model"
+A <- A + geom_text(data=N, aes(label=n),
+                   size=4,
+                   position=position_dodge(0.5),color="black") +
+    coord_cartesian(clip = "off")+
+    geom_text(data=Nlabel, aes(x=0.5, label="n"),
+              color="black", size=4)+
+    theme(legend.position="none")
+
+Ag <- ggplotGrob(A)
+```
+
+```{r fig4a, fig.width=15, fig.height=7, dev=c("png", "pdf")}
+layout <- matrix(1:2, ncol=1)
+heights <- unit(c(0.98, 0.02), "npc")
+gl <- list(Ag, nullGrob())
+grid.newpage()
+grid.arrange(grobs=gl, layout=layout,
+             heights=heights)
+y <- unit(0.08, "npc")
+## cancer
+grid.segments(x0 = unit(c(0.18, 0.71), "npc"), y0 = y,
+              x1 = unit(c(0.52, 0.99), "npc"), y1 = y,
+              gp=gpar(lwd=1.5))
+## non-cancer
+grid.segments(x0 = unit(0.53, "npc"), y0 = y,
+              x1 = unit(0.69, "npc"), y1 = y,
+              gp=gpar(lwd=1.5))
+grid.text("Cancer Stage", x=unit(0.35, "npc"),
+          y=unit(0.04, "npc"), gp=gpar(cex=1.5))
+grid.text("Cancer Stage", x=unit(0.85, "npc"),
+          y=unit(0.04, "npc"), gp=gpar(cex=1.5))
+grid.text("Non-cancer", x=unit(0.61, "npc"),
+          y=unit(0.04, "npc"), gp=gpar(cex=1.5))
+```
+
+
+
+```{r surveillance_setup, eval=FALSE}
+N <- dat3 %>%
+    group_by(Disease,model) %>% #filter(model=="Surveillance Model"|Disease=="Non-cancer") %>%
+    summarize(n=length(unique(id)),
+              groups=unique(Disease),
+              .groups="drop") %>%
+    mutate(score=-0.05)
+
+Nlabel <- tibble(groups=levels(N$groups)[1]) %>%
+    mutate(groups=factor(groups, levels(N$groups)),
+           label="n", score=-0.05,
+           category=levels(N$groups)[1],
+           category=factor(category, levels(N$groups)))
+A <- A +
+    #geom_label(x = 2, y = -.22,
+    #           label = "Non-cancer individuals", size=6) +
+    geom_label(x = 3.7, y = -.22,
+               label = "         Cancer stage        ",
+               size=10)
+
+N$score<- -.05
+Nlabel$score<- -.05
+Nlabel$model<-"Screening Model"
+A <- A + geom_text(data=N, aes(label=n),
+                   size=4,
+                   position=position_dodge(0.5),color="black") +
+    coord_cartesian(clip = "off")+
+    geom_text(data=Nlabel, aes(x=0.5, label="n"),
+              color="black", size=4)+
+    theme(legend.position="none")
+A
+#ggsave("aa_allbxplts.pdf", width=15, height=6)
+```

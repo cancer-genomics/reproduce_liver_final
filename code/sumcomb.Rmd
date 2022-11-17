@@ -1,0 +1,936 @@
+---
+title: "SumCombine"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(caret)
+library(recipes)
+library(pROC)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(devtools)
+library(ggpubr)
+
+```
+
+## R Markdown
+
+Loading the data
+
+
+```{r}
+
+#High
+ctcovlistlive <-list.files("/dcs04/scharpf/data/zfoda/outdir_resub", pattern = "_coverage1.txt", full.names = TRUE)
+
+ctlivdf <- data.frame(id = character(0), grp = character(0), pos = character(0), rel_cov = character(0), TF = character(0))
+for (i in 1:length(ctcovlistlive)) {
+ tmp.df <-  read_delim(ctcovlistlive[i], 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+  ctcovlistlive[i] %>% strsplit(split = "/" ) ->TFN
+  tmp.df$TF<- unlist(TFN)[7]
+  ctlivdf <- rbind(ctlivdf, tmp.df)
+}
+
+write_csv(ctlivdf,"/dcs04/scharpf/data/zfoda/outdirhigh/allhi.txt")
+ctlivdf <- read.csv("/dcs04/scharpf/data/zfoda/outdirhigh/allhi.txt")
+
+plotdf <- ctlivdf %>% group_by(TF,id) %>% filter(pos %in% c(3000:2500,-3000:-2500))%>% summarise(mean(cov)) %>% right_join(ctlivdf) %>% mutate(cent_cov=cov/`mean(cov)`)%>% dplyr::filter(grp != "Cholangiocarcinoma") %>% separate(TF,c("enc","TF","extra"), extra = "merge") 
+
+saveRDS(plotdf,file = "../data/plotdf_hi")
+
+readRDS("../data/plotdf_hi")->plotdf
+
+plotdf %>% group_by(pos,grp1,TF)%>% summarise(Mean=mean(cent_cov), Max=max(cent_cov), Min=min(cent_cov), Median=median(cent_cov), Std=sd(cent_cov)) -> high_mean 
+
+saveRDS(high_mean,here("../data","high_mean"))
+
+#low
+ctcovlistlive <-list.files("/dcs04/scharpf/data/zfoda/outdirvallow_resub", pattern = "_coverage1.txt", full.names = TRUE)
+
+ctlivdf <- data.frame(id = character(0), grp = character(0), pos = character(0), rel_cov = character(0), TF = character(0))
+for (i in 1:length(ctcovlistlive)) {
+ tmp.df <-  read_delim(ctcovlistlive[i], 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+  ctcovlistlive[i] %>% strsplit(split = "/" ) ->TFN
+  tmp.df$TF<- unlist(TFN)[7]
+  ctlivdf <- rbind(ctlivdf, tmp.df)
+}
+
+write_csv(ctlivdf,"/dcs04/scharpf/data/zfoda/outdirhigh/alllow.txt")
+ctlivdf <- read.csv("/dcs04/scharpf/data/zfoda/outdirhigh/alllow.txt")
+
+plotdf <- ctlivdf %>% group_by(TF,id) %>% filter(pos %in% c(3000:2500,-3000:-2500))%>% summarise(mean(cov)) %>% right_join(ctlivdf) %>% mutate(cent_cov=cov/`mean(cov)`)%>% dplyr::filter(grp != "Cholangiocarcinoma") %>% separate(TF,c("enc","TF","extra"), extra = "merge") 
+
+saveRDS(plotdf,file = "../data/plotdf_low")
+readRDS("../data/plotdf_low")->plotdf
+
+plotdf %>% group_by(pos,grp1,TF)%>% summarise(Mean=mean(cent_cov), Max=max(cent_cov), Min=min(cent_cov), Median=median(cent_cov), Std=sd(cent_cov)) -> low_mean
+
+saveRDS(low_mean,here("../data","low_mean"))
+
+
+```
+
+```{r Load, echo=FALSE}
+
+
+##metadata and delfi scores
+liver<-read_csv("../../Delfi_Data/liver_delfi_features.csv")
+liver_meta<- read_csv("/dcs04/scharpf/data/zfoda/scripts/Livercohortmetadata.csv")
+liver<-inner_join(liver,liver_meta, by=c("id"="CGID"))
+
+
+healthy1<-read_csv("../../Delfi_Data/healthy_delfi_features.csv")
+healthy2<-read_csv("../../Delfi_Data/healthy_delfi_validation_p1.csv")
+healthy2_meta <- read_csv("../../Delfi_Data/healthy_p1_QC_psomagen.csv")
+healthy2<-inner_join(healthy2,healthy2_meta %>% select(Alternate_ID),by=c("id"="Alternate_ID"))
+load("../../Delfi_Data/valid_metadata.rda")
+healthy <- rbind(healthy1,healthy2)
+
+healthy<-liver_meta %>% dplyr::rename(id="CGID") %>% inner_join(healthy)
+
+#healthy$'HCC Status'<-"No"
+#healthy$'Date Collection'<-"unk"
+#healthy$BCLC<-"not_relevant"
+#healthy$'Child-Pugh' <-"not_relevant"
+#healthy$Disease<-"Healthy"
+
+data<- plyr::rbind.fill(liver,healthy) %>% dplyr::rename(Sex = "Sex(1=F,2=M)")
+
+
+Livercohortmetadata_curated %>% select(CGID,`Cirrhosis status`)%>% inner_join(cov.df, by=c("CGID"="id")) ->covm
+
+covm[2:5621] -> rocdata
+
+library(caTools)
+as.data.frame(t(colAUC(rocdata[2:5620],rocdata$`Cirrhosis status`, alg = "ROC"))) %>% rownames_to_column(var = "stat") %>% separate(stat,into = c("stat","TF","extra"), extra = "merge") %>% separate(stat,c("stat"), sep = "E")-> allauc
+
+meta<-read_excel("/users/zfoda/liver_resub/data/Clinical_Metadata_spreadsheet_8_11.xlsx") 
+
+
+summary.df <- data.frame(id = character(0),
+                         grp = character(0),
+                         grp1 = character(0),
+                         rel_cov = character(0),
+                         TF =character(0),
+                         acceess =character(0),
+                         depth=character(0))
+covlist <-list.files("/dcs04/scharpf/data/zfoda/outdirhigh", pattern = "_summary", full.names = TRUE)
+for (i in 1:length(covlist)) {
+  tmp.df <-  read_delim(covlist[i], 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+  summary.df <- rbind(summary.df, tmp.df)
+}
+
+#TF coverage
+
+ctcovlistlive[1] %>% strsplit(split = "/" ) ->TFN
+unlist(TFN)[7]
+
+```
+
+```{r}
+
+#covlistlung <-list.files("../../outdir/lung", pattern = "_summary", full.names = TRUE)
+#df <- data.frame(id = character(0), grp = character(0), pos = character(0), rel_cov = character(0))
+#for (i in 1:length(covlistlung)) {
+#  tmp.df <-  read_delim(covlistlung[i], 
+#    delim = "\t", escape_double = FALSE, 
+#    trim_ws = TRUE)
+#  df <- rbind(df, tmp.df)
+#}
+
+#lungsum <- df %>%select(-depth,-access)%>% pivot_wider(names_from = TF, values_from = rel_cov)
+
+#write_csv(lungsum,"../../outdir/lung/lungtfcoveragesummary.csv")
+
+
+#ctcovlist <-list.files("../../outdir/lung", pattern = "_coverage1.txt", full.names = TRUE)
+#ctdf <- data.frame(id = character(0), grp = character(0), pos = character(0), rel_cov = character(0))
+#for (i in 1:length(ctcovlist)) {
+#  tmp.df <-  read_delim(ctcovlist[i], 
+#    delim = "\t", escape_double = FALSE, 
+#    trim_ws = TRUE)
+ # ctdf <- rbind(ctdf, tmp.df)
+#}
+
+
+ids <- unique(ctlivdf$id)
+TFs <- unique(ctlivdf$TF)
+ctl_pos <- c(-3000:-2500, 2500:3000)
+dip_pos <- -200:200
+summary.df <- data.frame(id = character(0),
+                         grp = character(0),
+                         grp1 = character(0),
+                         rel_cov = character(0),
+                         TF =character(0))
+for (i in 1:length(ids)) {
+  for (j in 1:length(TFs)) {
+    z <- subset(ctlivdf, id == ids[i])%>% subset(TF == TFs[j])
+  flank_height <-((sum(head(sort(z$cov[z$pos %in% dip_pos], decreasing = TRUE),50)))/50)
+  background <- (sum(z$cov[z$pos %in% ctl_pos]) / length(ctl_pos))
+  base_cov <- (sum(tail(sort(z$cov[z$pos %in% dip_pos], decreasing = TRUE),10)))/10
+  access <- log2(flank_height/background)
+  depth <- log2(base_cov/flank_height)
+  rel_cov <- ( sum(z$cov[z$pos %in% dip_pos]) / length(dip_pos) ) / ( sum(z$cov[z$pos %in% ctl_pos]) / length(ctl_pos) )  
+  tmp.summary.df <- data.frame(id = ids[i],
+                               grp = unique(ctlivdf$grp[ctlivdf$id == ids[i]]),
+                               grp1 = unique(ctlivdf$grp1[ctlivdf$id == ids[i]]),
+                               rel_cov = rel_cov,
+                               access =access,
+                               depth= depth,
+                               TF = unique(ctlivdf$TF[ctlivdf$TF == TFs[j]] ))
+  summary.df <- rbind(summary.df, tmp.summary.df)
+}}
+
+write.csv(summary.df,file = "/dcs04/scharpf/data/zfoda/outdirhigh/longsumlist.csv")
+summdepth <- summary.df %>% select(-4,-5) %>% pivot_wider(names_from = TF, values_from = depth,names_prefix = "depth")
+summrelcov <- summary.df %>% select(-5,-6) %>% pivot_wider(names_from = TF, values_from = rel_cov,names_prefix = "cov")
+summaccess <- summary.df %>% select(-4,-6) %>% pivot_wider(names_from = TF, values_from = access,names_prefix = "access")
+hccsumall <- left_join(summdepth,summrelcov) %>% left_join(summaccess)
+
+hccsumall %>% select(contains("liver"),contains("Hep"),id,grp,grp1) %>% write.csv(file = "/dcs04/scharpf/data/zfoda/outdir3/widelistliver.csv")
+
+hccsumall %>% select(contains("liver"),contains("Hep"),grp)
+write.csv(hccsumall,file = "/dcs04/scharpf/data/zfoda/outdirhigh/widesumlist.csv")
+
+unique(summary.df$TF) ->tfsl
+tfsh<- c("ENCSR000BQI.CEBPB.Hep-G2_coverage1.txt", "ENCSR080XEY.FOXA2.liver_coverage1.txt", "ENCSR092OVN.FOXA3.Hep-G2_coverage1.txt",  "ENCSR201GGK.NFIL3.Hep-G2_coverage1.txt", "ENCSR500WXT.RARA.Hep-G2_coverage1.txt", "ENCSR528PSI.HLF.Hep-G2_coverage1.txt" , "ENCSR798IJO.NR2F6.Hep-G2_coverage1.txt", "ERP002306.FOXA1.liver_coverage1.txt", "ERP002306.HNF4A.liver_coverage1.txt",     "GSE97661.FOXO3.Hep-G2_coverage1.txt" )
+
+
+pl <- 	plotdf %>% dplyr::filter(grp != "Cholangiocarcinoma",TF !="ESRRA") %>% filter(id!="CGPLH921P") %>% ggplot(aes(x = pos, y = cent_cov, color = grp, group = id)) +
+       geom_line(aes(color = grp), alpha = 0.7) +
+       cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-500,500)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "slateblue", "Non-cancer" = "grey",Cirrhosis ="green", Cholangiocarcinoma ="black")) +
+       theme(legend.title = element_blank(),
+             legend.position = c(0.8, 0.1)) +
+         facet_wrap(~TF, scales = "free_y")
+
+pl2 <- 	plotdf %>% dplyr::filter(grp != "Cholangiocarcinoma", grp != "Non-cancer")   %>% ggplot(aes(x = pos, y = cent_cov, color = grp1, group = id)) +
+       geom_line(aes(color = grp), alpha = 0.7) +
+       cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  #xlim(c(-500,500)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "slateblue", "Non-cancer" = "grey")) +
+       theme(legend.title = element_blank(),
+             legend.position = c(0.8, 0.1)) +
+         facet_wrap(~factor(TF,levels=tfhilist), scales = "free_y")
+
+#p <- 	ctdf %>% group_by(TF,id) %>% filter(pos %in% c(3000:2500,-3000:-2500))%>% summarise(mean(cov)) %>% right_join(ctdf) %>% mutate(cent_cov=cov/`mean(cov)`)  %>% ggplot(aes(x = pos, y = cent_cov, color = grp1, group = id)) +
+       #geom_ribbon(data = q.df, aes(x = pos, ymin = q5, ymax = q95), inherit.aes = FALSE, alpha = 0.5, color = NA, fill = "grey50") +
+ #      geom_line(aes(color = grp1), alpha = 0.7) +
+  #     cowplot::theme_cowplot() +
+  #     geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  #xlim(c(-500,500)) +
+   #    ylab("Relative coverage") +
+    #   xlab("Position relative to peak (bp)") +
+     #  scale_color_manual(values = c(Cancer = "slateblue", "Other" = "grey")) +
+      # theme(legend.title = element_blank(),
+       #      legend.position = c(0.8, 0.1)) +
+        # facet_wrap(~TF, scales = "free_y")
+
+#ctdf %>% group_by(TF,id) %>% filter(pos %in% c(3000:2500,-3000:-2500))%>% summarise(mean(cov)) %>% right_join(ctdf) %>% mutate(cent_cov=cov/`mean(cov)`)
+
+pl2
+ggsave(pl,filename = "/dcs04/scharpf/data/zfoda/outdir3/zoomedtf.png", width = 10,height = 7)
+ggsave(pl2,filename = "/dcs04/scharpf/data/zfoda/outdirhigh/tf.png", width = 10,height = 7)
+
+hccsumall <- widesumlist
+
+library(caTools)
+hccsumall %>% filter(grp != "Cholangiocarcinoma") %>% select(grp,contains("liver"),contains("Hep"),-contains("ESRRA"))   -> rocdata
+as.data.frame(t(colAUC(rocdata[2:34],rocdata$grp, alg = "ROC"))) %>% rownames_to_column(var = "stat") %>% separate(stat,into = c("stat","TF","extra"), extra = "merge") %>% separate(stat,c("stat"), sep = "E")-> allauc
+
+write_csv(allauc,"/dcs04/scharpf/data/zfoda/outdir3/auc.csv")
+
+plotdf %>% filter(id!="CGPLH921P")%>%arrange(-cent_cov) %>% distinct(id,TF, .keep_all = TRUE) ->maxlist
+
+
+
+pl3 <- plotdf %>% filter(id!="CGPLH921P") %>% ggplot(aes(x = pos, y = cent_cov, color = grp, group = id)) +
+       geom_line(aes(color = grp), alpha = 0.7) +
+       cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  #xlim(c(-500,500)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "slateblue", "Non-cancer" = "grey",Cirrhosis ="green", HBV ="yellow")) +
+       theme(legend.title = element_blank(),
+             legend.position = c(0.8, 0.1)) +
+         facet_wrap(~TF, scales = "free_y")
+ggsave(pl3,filename = "/dcs04/scharpf/data/zfoda/outdir3/tfgrps.png", width = 10,height = 7)
+
+
+
+```
+```{r}
+
+## Picking TF by comparing means
+
+sigmean <- compare_means(rel_cov~grp,data = df,group.by = "TF",p.adjust.method = "bonferroni") %>% filter(p.adj < 0.005)
+sigtf <- unique(sigmean$TF)
+alltf <- unique(df$TF)
+alltf
+  motiflist <- c("ENCSR000BQI.CEBPB.Hep-G2", "ENCSR000EEW.ESRRA.Hep-G2","ENCSR080XEY.FOXA2.liver","ENCSR000BRU.FOXM1.GM12878","ENCSR092OVN.FOXA3.Hep-G2","ENCSR201GGK.NFIL3.Hep-G2","ERP002306.HNF4A.liver","Oth.ALL.05.PPARA.AllCell","ENCSR528PSI.HLF.Hep-G2" ,"ENCSR897MMC.JUNB.GM12878","ERP002306.FOXA1.liver","ENCSR000BHP.FOSL2.Hep-G2","ENCSR582ZOA.NFIB.MCF-7","ENCSR970NKQ.NR2F1.K-562","ENCSR798IJO.NR2F6.Hep-G2","ENCSR500WXT.RARA.Hep-G2")
+
+   motiflisttight <- c("ENCSR582ZOA.NFIB.MCF-7","ENCSR000BQI.CEBPB.Hep-G2","ERP002306.HNF4A.liver","ENCSR528PSI.HLF.Hep-G2","ENCSR970NKQ.NR2F1.K-562","ERP002306.FOXA1.liver","ENCSR000BRU.FOXM1.GM12878")
+
+
+hccsum2 <- df %>% filter(TF %in% motiflisttight )%>%pivot_wider(names_from = TF, values_from = rel_cov) 
+
+hccsum2[is.na(hccsum2)] <- 1
+hccsum1 <- df %>%pivot_wider(names_from = TF, values_from = rel_cov)
+hccsum1[is.na(hccsum1)] <- 1
+
+names(hccsum2) <- sub("^[^.]+\\.", "", names(hccsum2))
+names(hccsum1) <- sub("^[^.]+\\.", "", names(hccsumall))
+sub("^[^.]+\\.", "", names(hccsumall))
+
+write_csv(hccsum1,"../../outdir/livertfcoveragesummary.csv")
+
+write_csv(hccsum2,"../../outdir/liversigtfcoveragesummary.csv")
+
+
+hccsum2 %>% select(-id) %>% colnames() ->tfin
+datatf<-inner_join(hccsum2,data)
+
+mycomp <- (list( c("Cirrhosis","HCC"), c("Cirrhosis","Healthy"), c("Healthy","HCC")))
+```
+Plotting relative coverage per TF
+
+```{r tfs, echo=FALSE}
+
+hccsumall %>% separate(TF,c("enc","TF","extra"), extra = "merge") %>% ggplot(aes(x=factor(grp,levels = c("HCC","Cirrhosis","Non-cancer")),y=rel_cov,color=factor(grp,levels = c("HCC","Cirrhosis","Non-cancer")))) + geom_boxplot() +geom_jitter() +facet_wrap(~TF, scales = "free")+ theme_pubr() +  theme(axis.title.x=element_blank(), axis.text.x=element_blank(),axis.ticks.x=element_blank(), legend.title = element_blank())
+
+hccsumall %>% separate(TF,c("enc","TF","extra"), extra = "merge") %>% ggplot(aes(x=depth,y=access,color=factor(grp,levels = c("HCC","Cirrhosis","Healthy")))) + geom_point() +facet_wrap(~TF) + theme_pubr()
+
+hccsumall %>% separate(TF,c("enc","TF","extra"), extra = "merge") %>% ggplot(aes(x=depth,y=access,color=factor(grp,levels = c("HCC","Cirrhosis","Non-cancer")))) + geom_point() +facet_wrap(~TF) + theme_pubr() +theme(legend.title = element_blank())
+
+ggsave("/dcs04/scharpf/data/zfoda/outdir3/Alltf.png",units = "in",width=12,height=8)
+
+
+df %>% filter(TF %in% motiflisttight)%>% separate(`TF`, c("m","TF","n"), extra ="merge"
+                )%>% gsub( "NR2F1","COUP-TFII") %>% ggplot(aes(x=factor(grp,levels = c("HCC","Cirrhosis","Healthy")),y=rel_cov,color=factor(grp,levels = c("HCC","Cirrhosis","Healthy")))) + geom_boxplot() +geom_jitter() +facet_wrap(~TF, scales ="free") + theme_pubr() +  theme(axis.title.x=element_blank(), axis.text.x=element_blank(),axis.ticks.x=element_blank(), legend.title = element_blank())
+
+ggsave("sigtf.png",units = "in",width=12,height=8)
+
+```
+
+Models with significant TFs
+
+```{r Actual, echo=FALSE}
+read_csv("/dcs04/scharpf/data/zfoda/outdir5/widesumlist.csv") ->hccsumall
+
+hccsumall %>% filter(grp != "Cholangiocarcinoma") %>% select(grp,contains("liver"),contains("Hep"),-contains("ESRRA"))   -> rocdata
+as.data.frame(t(colAUC(rocdata[2:34],rocdata$grp, alg = "ROC"))) %>% rownames_to_column(var = "stat") %>% separate(stat,into = c("stat","TF","extra"), extra = "merge") %>% separate(stat,c("stat"), sep = "E")-> allauc
+
+hccsum2 <- hccsumall %>% filter(grp != "Cholangiocarcinoma") %>% filter(id !="CGPLH758P_1") %>% select(id,grp,grp1,starts_with("access"),starts_with("depth")) %>% select(contains("liver"),contains("Hep"),id,grp,grp1)
+hccsum3 <- hccsum2 %>% filter(grp != "Non-cancer", grp != "Cholangiocarcinoma")
+recipe_seq <- recipe(grp1 ~ ., data=hccsum2) %>%
+    step_rm(grp) %>%
+    update_role(id, new_role = "ID")  %>%
+    #step_pca(starts_with("ratio_"), prefix = "ratio_pc_",  threshold=0.90)     %>%
+    step_corr(all_predictors(), threshold=0.95) %>%
+    step_nzv(all_predictors())
+
+recipe_seq2 <- recipe(grp1 ~ ., data=hccsum3) %>%
+    step_rm(grp) %>%
+    update_role(id, new_role = "ID")  %>% 
+    #step_pca(starts_with("ratio_"), prefix = "ratio_pc_",  threshold=0.90)     %>%
+    step_corr(all_predictors(), threshold=0.95) %>%
+    step_nzv(all_predictors())
+
+
+glmnetGrid <- expand.grid(
+    alpha = 1,
+    lambda = 10^seq(-5, -1, length.out = 100))
+#### Train models
+set.seed(1234)
+ctrl <- trainControl(method = "repeatedcv",
+                     number = 5,
+                     repeats = 10,
+                     verboseIter = FALSE,
+                     savePredictions="final",
+                     classProbs=TRUE,
+                     index=createMultiFolds(hccsum2$grp1, 5, 10),
+                     summaryFunction = twoClassSummary)
+
+model_all1 <- caret::train(recipe_seq,
+                          data = hccsum2,
+                          method = "glmnet",
+                          tuneGrid = glmnetGrid,
+                          trControl = ctrl)
+
+ctrl2 <- trainControl(method = "repeatedcv",
+                     number = 5,
+                     repeats = 10,
+                     verboseIter = FALSE,
+                     savePredictions="final",
+                     classProbs=TRUE,
+                     index=createMultiFolds(hccsum3$grp1, 5, 10),
+                     summaryFunction = twoClassSummary)
+
+model_all2 <- caret::train(recipe_seq2,
+                          data = hccsum3,
+                          method = "glmnet",
+                          tuneGrid = glmnetGrid,
+                          trControl = ctrl2)
+
+
+```
+Analyze HCC vs. Healthy/Cirrhosis Model
+
+```{r, echo=FALSE}
+library(RColorBrewer)
+
+pred.all1 <- model_all1$pred
+pred.all1 <- pred.all1 %>% group_by(rowIndex) %>% summarize(score.all = mean(HCC))
+
+all_data <- hccsum2 %>% mutate(rowIndex = 1:n())
+
+labels <- all_data %>% select(id, grp,grp1)
+ids <- inner_join(all_data %>% select(id, rowIndex), labels, by="id")
+
+preds_all1 <- inner_join(ids, pred.all1, by="rowIndex")
+
+#liver only model
+
+pred.all2 <- model_all2$pred
+pred.all2 <- pred.all2 %>% group_by(rowIndex) %>% summarize(score.all2 = mean(HCC))
+
+all_data <- hccsum3 %>% mutate(rowIndex = 1:n())
+
+labels <- all_data %>% select(id, grp,grp1)
+ids <- inner_join(all_data %>% select(id, rowIndex), labels, by="id")
+
+preds_all2 <- inner_join(ids, pred.all2, by="rowIndex")
+preds_all <- left_join(preds_all1,preds_all2) %>% inner_join(liver_meta, by=c("id"="CGID"))
+
+
+
+predsliv <-preds_all %>% filter(grp != "Non-cancer")
+earlliver <- predsliv %>% filter(BCLC !="C",BCLC !="B")
+lateliver <- predsliv %>% filter(BCLC !="0",BCLC !="A")
+earlall <- preds_all %>% filter(BCLC !="C",BCLC !="B")
+lateall <- preds_all %>% filter(BCLC !="0",BCLC !="A")
+mycomp <- (list( c("Cirrhosis","HCC"), c("Cirrhosis","Non-cancer"), c("Non-cancer","HCC"),c("HBV","HCC")))
+colors <- brewer.pal(3, "Dark2")
+#names(colors) <- model_levels
+ggplot(preds_all,aes(x=factor(grp,levels = c("Non-cancer","HBV","Cirrhosis","HCC")),y=score.all))  +
+    geom_point(aes(fill=grp1),position=position_jitterdodge(0.2, dodge.width=0.5),
+               pch=21, alpha=0.5, size=0.7,
+               color="gray") +
+    geom_boxplot(outlier.shape=NA, alpha=0.3,
+                 width=0.3,
+                 position=position_dodge(0.5)) +
+    theme_classic(base_size=20) +
+    theme(panel.grid=element_blank(),
+          axis.text.x=element_text(size=12),
+          ##legend.position="bottom",
+          ##legend.justification=c("center", "bottom"),
+          strip.background=element_rect(fill="white", color="black"),
+          strip.placement="outside") +
+    scale_y_continuous(expand=expansion(add=c(0.04, 0.1)),
+                       breaks=seq(0, 1, by=0.2),
+                       labels=as.character(seq(0, 1, by=0.2))) +
+    xlab("") +
+    ylab("TFBS Score") +
+    scale_fill_manual(values=colors) +
+    ##guides(fill=guide_legend(title=""), color=guide_legend(title="")) +
+    guides(fill="none", color="none") #+
+    #facet_wrap(~groups, nrow=1, scales="free_x", strip.position="bottom")
+
+
+
+ggplot(preds_all1,aes(x=factor(grp,levels = c("Non-cancer","Cirrhosis","HCC","HBV")),y=score.all,color=grp)) +
+geom_boxplot() +geom_jitter() +stat_compare_means(label.y.npc = 0.9, comparisons = mycomp) + theme_pubr() +  theme( legend.title = element_blank(), axis.title.x = element_blank()) + ylab("Score Full model") 
+ggplot(preds_all,aes(x=BCLC,y=score.all,color=grp1))+geom_boxplot() +geom_point() +stat_compare_means() +theme_pubr() +  theme(legend.title = element_blank()) + ylab("Score Full model")
+
+
+
+ggplot(predsliv,aes(x=factor(grp,levels = c("Cirrhosis","HCC","HBV")),y=score.all2,color=grp))+geom_boxplot() +geom_jitter() +stat_compare_means() +theme_pubr() +  theme(legend.title = element_blank(), axis.title.x = element_blank()) + ylab("Score Liver model") 
+ggplot(predsliv,aes(x=BCLC,y=score.all2,color=grp1))+geom_boxplot() +geom_point() +stat_compare_means() +theme_pubr() +  theme(legend.title = element_blank()) + ylab("Score Liver model")
+
+pROC::roc(preds_all$grp1,preds_all$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE)
+
+pROC::roc(predsliv$grp1,predsliv$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE,print.auc.y = .8,print.auc.x=0.4,col="red", xlim=c(1,0))
+pROC::roc(preds_all$grp1,preds_all$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE,col="green",print.auc.y = .7,print.auc.x=0.4, add = TRUE, xlim=c(1,0))
+pROC::roc(predsliv$grp1,predsliv$score.all2,ci=TRUE,plot=TRUE,print.auc=TRUE,col="black",print.auc.y = .6,print.auc.x=0.4, add = TRUE, xlim=c(1,0))
+legend("bottom",legend=c("HCC vs At risk","HCC vs All","Trained only on liver"),col=c("red","green", "black"),lwd=4,cex=.9)
+
+pROC::roc(earlliver$grp1,earlliver$score.all2,ci=TRUE,plot=TRUE,print.auc=TRUE,col="blue",print.auc.y = .5,print.auc.x=0.4, xlim=c(1,0))
+pROC::roc(earlall$grp1,earlall$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE,col="orange",print.auc.y = .4,print.auc.x=0.4, add = TRUE, xlim=c(1,0))
+legend("bottom",legend=c("Stage 0-A Trained on liver","Stage 0-A subsetted"),col=c("blue", "orange"),lwd=4,cex=.9)
+
+
+pROC::roc(lateliver$grp1,lateliver$score.all2,ci=TRUE,plot=TRUE,print.auc=TRUE,col="blue",print.auc.y = .5,print.auc.x=0.4, xlim=c(1,0))
+pROC::roc(lateall$grp1,lateall$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE,col="orange",print.auc.y = .4,print.auc.x=0.4, add = TRUE, xlim=c(1,0))
+legend("bottom",legend=c("Stage B-C Trained on liver","Stage B-C subsetted"),col=c("blue", "orange"),lwd=4,cex=.9)
+
+
+'ggplot(aes(category, score, fill=training_model)) +
+    geom_point(aes(fill=training_model),
+               position=position_jitterdodge(0.2, dodge.width=0.5),
+               pch=21, alpha=0.5, size=0.7,
+               color="gray") +
+    geom_boxplot(outlier.shape=NA, alpha=0.3,
+                 width=0.3,
+                 position=position_dodge(0.5)) +
+    theme_classic(base_size=20) +
+    theme(panel.grid=element_blank(),
+          axis.text.x=element_text(size=12),
+          ##legend.position="bottom",
+          ##legend.justification=c("center", "bottom"),
+          strip.background=element_rect(fill="white", color="black"),
+          strip.placement="outside") +
+    scale_y_continuous(expand=expansion(add=c(0.04, 0.1)),
+                       breaks=seq(0, 1, by=0.2),
+                       labels=as.character(seq(0, 1, by=0.2))) +
+    xlab("") +
+    ylab("DELFI score") +
+    scale_fill_manual(values=colors) +
+    ##guides(fill=guide_legend(title=""), color=guide_legend(title="")) +
+    guides(fill="none", color="none") +
+    facet_wrap(~groups, nrow=1, scales="free_x", strip.position="bottom")
+Nlabel <- tibble(groups=levels(N$groups)[1]) %>%
+    mutate(groups=factor(groups, levels(N$groups)),
+           label="n", score=-0.05,
+           category=levels(N$category)[1],
+           category=factor(category, levels(N$category)),
+           training_model=N$training_model[1])
+A <- A + geom_text(data=N, aes(label=n), size=4, position=position_dodge(0.5)) +
+    geom_text(data=Nlabel, aes(x=0.5, label="n"), size=4)
+A'
+
+
+
+```
+
+```{r control, echo=FALSE}
+read_csv("/dcs04/scharpf/data/zfoda/outdir4/widesumlist.csv") ->hccsumall
+hccsumall %>% filter(grp != "Cholangiocarcinoma") %>% select(-grp1,-id) -> rocdata
+as.data.frame(t(colAUC(rocdata[3:32],rocdata$grp, alg = "ROC"))) %>% rownames_to_column(var = "stat") %>% separate(stat,into = c("stat","TF","extra"), extra = "merge") %>% separate(stat,c("stat"), sep = "E")-> allauc
+
+
+hccsum2 <- hccsumall %>% filter(grp != "Cholangiocarcinoma") %>%  select(id,grp,grp1,starts_with("access"),starts_with("depth")) %>% drop_na()
+hccsum3 <- hccsum2 %>% filter(grp != "Non-cancer", grp != "Cholangiocarcinoma")
+recipe_seq <- recipe(grp1 ~ ., data=hccsum2) %>%
+    step_rm(grp) %>%
+    update_role(id, new_role = "ID")  %>%
+    #step_pca(starts_with("ratio_"), prefix = "ratio_pc_",  threshold=0.90)     %>%
+    step_corr(all_predictors(), threshold=0.95) %>%
+    step_nzv(all_predictors())
+
+recipe_seq2 <- recipe(grp1 ~ ., data=hccsum3) %>%
+    step_rm(grp) %>%
+    update_role(id, new_role = "ID")  %>% 
+    #step_pca(starts_with("ratio_"), prefix = "ratio_pc_",  threshold=0.90)     %>%
+    step_corr(all_predictors(), threshold=0.95) %>%
+    step_nzv(all_predictors())
+
+
+glmnetGrid <- expand.grid(
+    alpha = 1,
+    lambda = 10^seq(-5, -1, length.out = 100))
+#### Train models
+set.seed(1234)
+ctrl <- trainControl(method = "repeatedcv",
+                     number = 5,
+                     repeats = 10,
+                     verboseIter = FALSE,
+                     savePredictions="final",
+                     classProbs=TRUE,
+                     index=createMultiFolds(hccsum2$grp1, 5, 10),
+                     summaryFunction = twoClassSummary)
+
+model_all1 <- caret::train(recipe_seq,
+                          data = hccsum2,
+                          method = "glmnet",
+                          tuneGrid = glmnetGrid,
+                          trControl = ctrl)
+
+ctrl2 <- trainControl(method = "repeatedcv",
+                     number = 5,
+                     repeats = 10,
+                     verboseIter = FALSE,
+                     savePredictions="final",
+                     classProbs=TRUE,
+                     index=createMultiFolds(hccsum3$grp1, 5, 10),
+                     summaryFunction = twoClassSummary)
+
+model_all2 <- caret::train(recipe_seq2,
+                          data = hccsum3,
+                          method = "glmnet",
+                          tuneGrid = glmnetGrid,
+                          trControl = ctrl2)
+
+
+```
+Analyze HCC vs. Healthy/Cirrhosis Model
+
+```{r, echo=FALSE}
+library(RColorBrewer)
+
+pred.all1 <- model_all1$pred
+pred.all1 <- pred.all1 %>% group_by(rowIndex) %>% summarize(score.all = mean(HCC))
+
+all_data <- hccsum2 %>% mutate(rowIndex = 1:n())
+
+labels <- all_data %>% select(id, grp,grp1)
+ids <- inner_join(all_data %>% select(id, rowIndex), labels, by="id")
+
+preds_all1 <- inner_join(ids, pred.all1, by="rowIndex")
+
+#liver only model
+
+pred.all2 <- model_all2$pred
+pred.all2 <- pred.all2 %>% group_by(rowIndex) %>% summarize(score.all2 = mean(HCC))
+
+all_data <- hccsum3 %>% mutate(rowIndex = 1:n())
+
+labels <- all_data %>% select(id, grp,grp1)
+ids <- inner_join(all_data %>% select(id, rowIndex), labels, by="id")
+
+preds_all2 <- inner_join(ids, pred.all2, by="rowIndex")
+preds_all <- left_join(preds_all1,preds_all2) %>% inner_join(liver_meta, by=c("id"="CGID"))
+
+
+
+predsliv <-preds_all %>% filter(grp != "Non-cancer")
+earlliver <- predsliv %>% filter(BCLC !="C",BCLC !="B")
+lateliver <- predsliv %>% filter(BCLC !="0",BCLC !="A")
+earlall <- preds_all %>% filter(BCLC !="C",BCLC !="B")
+lateall <- preds_all %>% filter(BCLC !="0",BCLC !="A")
+mycomp <- (list( c("Cirrhosis","HCC"), c("Cirrhosis","Non-cancer"), c("Non-cancer","HCC"),c("HBV","HCC")))
+colors <- brewer.pal(3, "Dark2")
+#names(colors) <- model_levels
+ggplot(preds_all,aes(x=factor(grp,levels = c("Non-cancer","HBV","Cirrhosis","HCC")),y=score.all))  +
+    geom_point(aes(fill=grp1),position=position_jitterdodge(0.2, dodge.width=0.5),
+               pch=21, alpha=0.5, size=0.7,
+               color="gray") +
+    geom_boxplot(outlier.shape=NA, alpha=0.3,
+                 width=0.3,
+                 position=position_dodge(0.5)) +
+    theme_classic(base_size=20) +
+    theme(panel.grid=element_blank(),
+          axis.text.x=element_text(size=12),
+          ##legend.position="bottom",
+          ##legend.justification=c("center", "bottom"),
+          strip.background=element_rect(fill="white", color="black"),
+          strip.placement="outside") +
+    scale_y_continuous(expand=expansion(add=c(0.04, 0.1)),
+                       breaks=seq(0, 1, by=0.2),
+                       labels=as.character(seq(0, 1, by=0.2))) +
+    xlab("") +
+    ylab("TFBS Score") +
+    scale_fill_manual(values=colors) +
+    ##guides(fill=guide_legend(title=""), color=guide_legend(title="")) +
+    guides(fill="none", color="none") #+
+    #facet_wrap(~groups, nrow=1, scales="free_x", strip.position="bottom")
+
+
+
+ggplot(preds_all1,aes(x=factor(grp,levels = c("Non-cancer","Cirrhosis","HCC","HBV")),y=score.all,color=grp)) +
+geom_boxplot() +geom_jitter() +stat_compare_means(label.y.npc = 0.9, comparisons = mycomp) + theme_pubr() +  theme( legend.title = element_blank(), axis.title.x = element_blank()) + ylab("Score Full model") 
+ggplot(preds_all,aes(x=BCLC,y=score.all,color=grp1))+geom_boxplot() +geom_point() +stat_compare_means() +theme_pubr() +  theme(legend.title = element_blank()) + ylab("Score Full model")
+
+'ggplot(aes(category, score, fill=training_model)) +
+    geom_point(aes(fill=training_model),
+               position=position_jitterdodge(0.2, dodge.width=0.5),
+               pch=21, alpha=0.5, size=0.7,
+               color="gray") +
+    geom_boxplot(outlier.shape=NA, alpha=0.3,
+                 width=0.3,
+                 position=position_dodge(0.5)) +
+    theme_classic(base_size=20) +
+    theme(panel.grid=element_blank(),
+          axis.text.x=element_text(size=12),
+          ##legend.position="bottom",
+          ##legend.justification=c("center", "bottom"),
+          strip.background=element_rect(fill="white", color="black"),
+          strip.placement="outside") +
+    scale_y_continuous(expand=expansion(add=c(0.04, 0.1)),
+                       breaks=seq(0, 1, by=0.2),
+                       labels=as.character(seq(0, 1, by=0.2))) +
+    xlab("") +
+    ylab("DELFI score") +
+    scale_fill_manual(values=colors) +
+    ##guides(fill=guide_legend(title=""), color=guide_legend(title="")) +
+    guides(fill="none", color="none") +
+    facet_wrap(~groups, nrow=1, scales="free_x", strip.position="bottom")
+Nlabel <- tibble(groups=levels(N$groups)[1]) %>%
+    mutate(groups=factor(groups, levels(N$groups)),
+           label="n", score=-0.05,
+           category=levels(N$category)[1],
+           category=factor(category, levels(N$category)),
+           training_model=N$training_model[1])
+A <- A + geom_text(data=N, aes(label=n), size=4, position=position_dodge(0.5)) +
+    geom_text(data=Nlabel, aes(x=0.5, label="n"), size=4)
+A'
+
+
+ggplot(predsliv,aes(x=factor(grp,levels = c("Cirrhosis","HCC","HBV")),y=score.all2,color=grp))+geom_boxplot() +geom_jitter() +stat_compare_means() +theme_pubr() +  theme(legend.title = element_blank(), axis.title.x = element_blank()) + ylab("Score Liver model") 
+ggplot(predsliv,aes(x=BCLC,y=score.all2,color=grp1))+geom_boxplot() +geom_point() +stat_compare_means() +theme_pubr() +  theme(legend.title = element_blank()) + ylab("Score Liver model")
+
+pROC::roc(preds_all$grp1,preds_all$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE)
+
+pROC::roc(predsliv$grp1,predsliv$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE,print.auc.y = .8,print.auc.x=0.4,col="red", xlim=c(1,0))
+pROC::roc(preds_all$grp1,preds_all$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE,col="green",print.auc.y = .7,print.auc.x=0.4, add = TRUE, xlim=c(1,0))
+pROC::roc(predsliv$grp1,predsliv$score.all2,ci=TRUE,plot=TRUE,print.auc=TRUE,col="black",print.auc.y = .6,print.auc.x=0.4, add = TRUE, xlim=c(1,0))
+legend("bottom",legend=c("HCC vs At risk","HCC vs All","Trained only on liver"),col=c("red","green", "black"),lwd=4,cex=.9)
+
+pROC::roc(earlliver$grp1,earlliver$score.all2,ci=TRUE,plot=TRUE,print.auc=TRUE,col="blue",print.auc.y = .5,print.auc.x=0.4, xlim=c(1,0))
+pROC::roc(earlliver$grp1,earlliver$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE,col="orange",print.auc.y = .4,print.auc.x=0.4, add = TRUE, xlim=c(1,0))
+legend("bottom",legend=c("Stage 0-A Trained on liver","Stage 0-A subsetted"),col=c("blue", "orange"),lwd=4,cex=.9)
+
+
+pROC::roc(lateliver$grp1,lateliver$score.all2,ci=TRUE,plot=TRUE,print.auc=TRUE,col="blue",print.auc.y = .5,print.auc.x=0.4, xlim=c(1,0))
+pROC::roc(lateliver$grp1,lateliver$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE,col="orange",print.auc.y = .4,print.auc.x=0.4, add = TRUE, xlim=c(1,0))
+legend("bottom",legend=c("Stage B-C Trained on liver","Stage B-C subsetted"),col=c("blue", "orange"),lwd=4,cex=.9)
+
+```
+
+Modeling TF + delfi
+
+```{r, echo=FALSE}
+all_data <- inner_join(data,hccsum2) %>% select(c(1:997,1016:1047)) %>% select(c(1:986,989:1029))
+all_data$type <- all_data$'HCC Status'
+recipe_seqtf <- recipe(type ~ ., data=all_data) %>%
+    step_rm(starts_with("cov"), Sex, Age,'HCC Status','Cirrhosis status','Cohort','Disease','Date Collection',BCLC,'Child-Pugh',grp,grp1) %>%
+    update_role(id, new_role = "ID") %>%
+    step_pca(starts_with("ratio_"), prefix = "ratio_pc_",  threshold=0.90)     %>%
+    step_corr(all_predictors(), threshold=0.95) %>%
+    step_nzv(all_predictors())
+
+recipe_seq <- recipe(type ~ ., data=all_data) %>%
+    step_rm(starts_with("cov"), Sex, Age,'HCC Status','Cirrhosis status','Cohort','Disease','Date Collection',BCLC,'Child-Pugh', starts_with("depth"),starts_with("acces"),grp,grp1) %>%
+    update_role(id, new_role = "ID") %>%
+    step_pca(starts_with("ratio_"), prefix = "ratio_pc_",  threshold=0.90)     %>%
+    step_corr(all_predictors(), threshold=0.95) %>%
+    step_nzv(all_predictors())
+
+recipe_z <- recipe(type ~ ., data=all_data) %>%
+    step_rm(starts_with("cov"),starts_with("ratio"), Sex, Age,'HCC Status','Cirrhosis status','Cohort','Disease','Date Collection',BCLC,'Child-Pugh', starts_with("depth"),starts_with("acces"),grp,grp1) %>% update_role(id, new_role = "ID") %>%
+    step_corr(all_predictors(), threshold=0.95) %>%
+    step_nzv(all_predictors())
+
+recipe_ztf <- recipe(type ~ ., data=all_data) %>%
+    step_rm(starts_with("cov"),starts_with("ratio"), Sex, Age,'HCC Status','Cirrhosis status','Cohort','Disease','Date Collection',BCLC,'Child-Pugh',grp,grp1) %>% update_role(id, new_role = "ID") %>%
+    step_corr(all_predictors(), threshold=0.95) %>%
+    step_nzv(all_predictors())
+
+glmnetGrid <- expand.grid(
+    alpha = 1,
+    lambda = 10^seq(-5, -1, length.out = 100))
+#### Train models
+set.seed(1234)
+ctrl <- trainControl(method = "repeatedCV",
+                     number = 5,
+                     repeats = 10,
+                     verboseIter = FALSE,
+                     savePredictions="final",
+                     classProbs=TRUE,
+                     index=createMultiFolds(all_data$type, 5, 10),
+                     summaryFunction = twoClassSummary)
+
+model_all <- caret::train(recipe_seq,
+                          data = all_data,
+                          method = "glmnet",
+                          tuneGrid = glmnetGrid,
+                          trControl = ctrl)
+model_all_tf <- caret::train(recipe_seqtf,
+                          data = all_data,
+                          method = "glmnet",
+                          tuneGrid = glmnetGrid,
+                          trControl = ctrl)
+model_all_z <- caret::train(recipe_z,
+                          data = all_data,
+                          method = "glmnet",
+                          tuneGrid = glmnetGrid,
+                          trControl = ctrl)
+model_all_ztf <- caret::train(recipe_ztf,
+                          data = all_data,
+                          method = "glmnet",
+                          tuneGrid = glmnetGrid,
+                          trControl = ctrl)
+```
+Analyzing TF+ delfi on HCC vs other
+```{r, echo=FALSE}
+pred.all <- model_all$pred
+pred.all <- pred.all %>% group_by(rowIndex) %>% summarize(score.all = mean(Yes))
+
+all_data <- all_data %>% mutate(rowIndex = 1:n())
+
+labels <- all_data %>% select(id, Disease,type)
+ids <- inner_join(all_data %>% select(id, rowIndex), labels, by="id")
+
+preds_all <- inner_join(ids, pred.all, by="rowIndex")
+
+#TF
+pred.alltf <- model_all_tf$pred
+pred.alltf <- pred.alltf %>% group_by(rowIndex) %>% summarize(score.alltf = mean(Yes))
+
+all_data <- all_data %>% mutate(rowIndex = 1:n())
+
+labels <- all_data %>% select(id, Disease,type)
+ids <- inner_join(all_data %>% select(id, rowIndex), labels, by="id")
+
+preds_all <- inner_join(ids, pred.all, by="rowIndex")
+preds_all <- inner_join(preds_all,pred.alltf, by="rowIndex")
+
+#z-score only model
+pred.all_z <- model_all_z$pred
+pred.all_z <- pred.all_z %>% group_by(rowIndex) %>% summarize(score.all_z = mean(Yes))
+pred.all_ztf <- model_all_ztf$pred
+pred.all_ztf <- pred.all_ztf %>% group_by(rowIndex) %>% summarize(score.all_ztf = mean(Yes))
+
+
+preds_all <- inner_join(preds_all,pred.all_z, by="rowIndex")
+preds_all <- inner_join(preds_all,pred.all_ztf, by="rowIndex")
+
+
+pROC::roc(preds_all$type,preds_all$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE,print.auc.y = .65,col="red")
+pROC::roc(preds_all$type,preds_all$score.alltf,ci=TRUE,plot=TRUE,print.auc=TRUE,col="blue",print.auc.y = .55, add = TRUE)
+pROC::roc(preds_all$type,preds_all$score.all_z,ci=TRUE,plot=TRUE,print.auc=TRUE,col="green",print.auc.y = .45, add = TRUE)
+pROC::roc(preds_all$type,preds_all$score.all_ztf,ci=TRUE,plot=TRUE,print.auc=TRUE,col="orange",print.auc.y = .35, add = TRUE)
+legend("bottom",legend=c("DELFI model","Delfi +TF","Z-scores only","Z+TF"),col=c("red","blue","green","orange"),lwd=4,cex=.9)
+
+```
+ROC for the all model, with only hcc vs cirrhosis
+```{r, echo=FALSE}
+
+preds_all_subset <- preds_all %>% filter(Disease != "Non-cancer")
+preds_all_subset <- liver_meta %>% dplyr::rename( id = "CGID") %>% inner_join(preds_all_subset)
+pROC::roc(preds_all_subset$type,preds_all_subset$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE,col="red",print.auc.y = .7)
+pROC::roc(preds_all_subset$type,preds_all_subset$score.all_z,ci=TRUE,plot=TRUE,print.auc=TRUE,col="green",print.auc.y = .6, add = TRUE)
+pROC::roc(preds_all_subset$type,preds_all_subset$score.alltf,ci=TRUE,plot=TRUE,print.auc=TRUE,col="blue",print.auc.y = .5, add = TRUE)
+pROC::roc(preds_all_subset$type,preds_all_subset$score.all_ztf,ci=TRUE,plot=TRUE,print.auc=TRUE,col="orange",print.auc.y = .4, add = TRUE)
+legend("bottom",legend=c("DELFI model","Z-scores only","Delfi +TF","Z+TF"),col=c("red","green","blue","orange"),lwd=4,cex=.9)
+
+ggplot(preds_all_subset,aes(x=BCLC,y=score.all,color=Disease))+geom_boxplot() +geom_jitter() +stat_compare_means() +theme_pubr()
+
+
+```
+```{r just liver, echo=FALSE}
+all_data <- all_data %>% filter(grp != "Non-cancer")
+all_data$type <- all_data$'HCC Status'
+recipe_seqtf <- recipe(type ~ ., data=all_data) %>%
+    step_rm(starts_with("cov"), Sex, Age,'HCC Status','Cirrhosis status','Cohort','Disease','Date Collection',BCLC,'Child-Pugh',grp,grp1) %>%
+    update_role(id, new_role = "ID") %>%
+    step_pca(starts_with("ratio_"), prefix = "ratio_pc_",  threshold=0.90)     %>%
+    step_corr(all_predictors(), threshold=0.95) %>%
+    step_nzv(all_predictors())
+
+recipe_seq <- recipe(type ~ ., data=all_data) %>%
+    step_rm(starts_with("cov"), Sex, Age,'HCC Status','Cirrhosis status','Cohort','Disease','Date Collection',BCLC,'Child-Pugh', starts_with("depth"),starts_with("acces"),grp,grp1) %>%
+    update_role(id, new_role = "ID") %>%
+    step_pca(starts_with("ratio_"), prefix = "ratio_pc_",  threshold=0.90)     %>%
+    step_corr(all_predictors(), threshold=0.95) %>%
+    step_nzv(all_predictors())
+
+recipe_z <- recipe(type ~ ., data=all_data) %>%
+    step_rm(starts_with("cov"), Sex, Age,'HCC Status','Cirrhosis status','Cohort','Disease','Date Collection',BCLC,'Child-Pugh', starts_with("depth"),starts_with("acces"),grp,grp1) %>% update_role(id, new_role = "ID") %>%
+    step_corr(all_predictors(), threshold=0.95) %>%
+    step_nzv(all_predictors())
+
+recipe_ztf <- recipe(type ~ ., data=all_data) %>%
+    step_rm(starts_with("cov"), Sex, Age,'HCC Status','Cirrhosis status','Cohort','Disease','Date Collection',BCLC,'Child-Pugh',grp,grp1) %>% update_role(id, new_role = "ID") %>%
+    step_corr(all_predictors(), threshold=0.95) %>%
+    step_nzv(all_predictors())
+
+glmnetGrid <- expand.grid(
+    alpha = 1,
+    lambda = 10^seq(-5, -1, length.out = 100))
+#### Train models
+set.seed(1234)
+ctrl <- trainControl(method = "LOOCV",
+                     number = 5,
+                     repeats = 10,
+                     verboseIter = FALSE,
+                     savePredictions="final",
+                     classProbs=TRUE,
+                     index=createMultiFolds(all_data$type, 5, 10),
+                     summaryFunction = twoClassSummary)
+
+model_all <- caret::train(recipe_seq,
+                          data = all_data,
+                          method = "glmnet",
+                          tuneGrid = glmnetGrid,
+                          trControl = ctrl)
+model_all_tf <- caret::train(recipe_seqtf,
+                          data = all_data,
+                          method = "glmnet",
+                          tuneGrid = glmnetGrid,
+                          trControl = ctrl)
+model_all_z <- caret::train(recipe_z,
+                          data = all_data,
+                          method = "glmnet",
+                          tuneGrid = glmnetGrid,
+                          trControl = ctrl)
+model_all_ztf <- caret::train(recipe_ztf,
+                          data = all_data,
+                          method = "glmnet",
+                          tuneGrid = glmnetGrid,
+                          trControl = ctrl)
+```
+```{r just l, echo=FALSE}
+pred.all <- model_all$pred
+pred.all <- pred.all %>% group_by(rowIndex) %>% summarize(score.all = mean(Yes))
+
+all_data <- all_data %>% mutate(rowIndex = 1:n())
+
+labels <- all_data %>% select(id, Disease,type)
+ids <- inner_join(all_data %>% select(id, rowIndex), labels, by="id")
+
+preds_all <- inner_join(ids, pred.all, by="rowIndex")
+
+#TF
+pred.alltf <- model_all_tf$pred
+pred.alltf <- pred.alltf %>% group_by(rowIndex) %>% summarize(score.alltf = mean(Yes))
+
+all_data <- all_data %>% mutate(rowIndex = 1:n())
+
+labels <- all_data %>% select(id, Disease,type)
+ids <- inner_join(all_data %>% select(id, rowIndex), labels, by="id")
+
+preds_all <- inner_join(ids, pred.all, by="rowIndex")
+preds_all <- inner_join(preds_all,pred.alltf, by="rowIndex")
+
+#z-score only model
+pred.all_z <- model_all_z$pred
+pred.all_z <- pred.all_z %>% group_by(rowIndex) %>% summarize(score.all_z = mean(Yes))
+pred.all_ztf <- model_all_ztf$pred
+pred.all_ztf <- pred.all_ztf %>% group_by(rowIndex) %>% summarize(score.all_ztf = mean(Yes))
+
+
+preds_all <- inner_join(preds_all,pred.all_z, by="rowIndex")
+preds_all <- inner_join(preds_all,pred.all_ztf, by="rowIndex")
+
+
+pROC::roc(preds_all$type,preds_all$score.all,ci=TRUE,plot=TRUE,print.auc=TRUE,print.auc.y = .65,col="red")
+pROC::roc(preds_all$type,preds_all$score.alltf,ci=TRUE,plot=TRUE,print.auc=TRUE,col="blue",print.auc.y = .55, add = TRUE)
+pROC::roc(preds_all$type,preds_all$score.all_z,ci=TRUE,plot=TRUE,print.auc=TRUE,col="green",print.auc.y = .45, add = TRUE)
+pROC::roc(preds_all$type,preds_all$score.all_ztf,ci=TRUE,plot=TRUE,print.auc=TRUE,col="orange",print.auc.y = .35, add = TRUE)
+legend("bottom",legend=c("DELFI model","Delfi +TF","Z-scores only","Z+TF"),col=c("red","blue","green","orange"),lwd=4,cex=.9)
+```

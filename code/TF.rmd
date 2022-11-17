@@ -1,0 +1,636 @@
+---
+title: "cat"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(caTools)
+library(ggpubr)
+library(tidyverse)
+library(dplyr)
+library(cowplot)
+library(here)
+
+plotdf_low <- readRDS(here("../data","low_mean"))
+plotdf_high <- readRDS(here("../data","high_mean"))
+
+#readRDS(file = "../data/plotdf_low") ->plotdf_low
+#readRDS(file = "../data/plotdf_hi") ->plotdf_high
+
+#library(readxl)
+#Clinical_Metadata_spreadsheet_8_11 <- read_excel("~/liver_resub/data/Clinical_Metadata_spreadsheet_8_11.xlsx")
+#Clinical_Metadata_spreadsheet_8_11 %>% filter(forveryclean==1, Cohort != "Alive") ->cleanmeta
+#cleanmeta$id ->idwo
+
+
+#plotdf_low %>% filter(id %in% idwo) %>% group_by(pos,grp1,TF)%>% summarise(Mean=mean(cent_cov), Max=max(cent_cov), Min=min(cent_cov), Median=median(cent_cov), Std=sd(cent_cov)) -> low_mean 
+
+#plotdf_high %>% filter(id %in% idwo) %>% group_by(pos,grp1,TF)%>% summarise(Mean=mean(cent_cov), Max=max(cent_cov), Min=min(cent_cov), Median=median(cent_cov), Std=sd(cent_cov)) -> high_mean 
+
+
+#plotdf_low <-low_mean
+#plotdf_high <- high_mean
+#saveRDS(low_mean,here("../data","low_mean"))
+#saveRDS(high_mean,here("../data","high_mean"))
+
+```
+
+A function to make one facet of a plot with the means
+
+```{r}
+
+mean_plot_bottom<-function(df,TF2,lim) {
+  test<-df %>% filter(TF==TF2)
+  pl2 <- 	test %>%
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  #filter(TF %in% tfmhilist[1:9])%>%
+  ggplot(aes(x = pos, y = Mean, color = grp1)) +  
+  geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=1,Other=1), guide="none") +
+  geom_ribbon(aes(ymin=(Mean-Std), ymax=(Mean+Std),color=grp1,fill=grp1), linetype=0, alpha=0.1) + #linetype 2 is the dashed one victor didn't like, linetype 1 with alpha is an option. linetype = "dotted" is also possible. Don't need to change alpha
+  cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-lim,lim)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "blue", "Non-cancer" = "grey")) + theme_pubr() + scale_fill_manual(values = c(HCC = "blue", "Non-cancer" = "grey")) + 
+       theme(legend.title = element_blank()) +
+         facet_wrap(vars(TF), scales = "free_y")
+pl2
+}
+
+mean_plot_top<-function(df,TF2,lim) {
+   test<-df %>% filter(TF==TF2)
+pl2 <- 	test %>%
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  #filter(TF %in% tfmhilist[1:9])%>%
+  ggplot(aes(x = pos, y = Mean, color = grp1)) +  
+  geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=1,Other=1), guide="none") +
+  geom_ribbon(aes(ymin=(Mean-Std), ymax=(Mean+Std),color=grp1,fill=grp1), linetype=0, alpha=0.1) + #linetype2 without any alpha is the dashed one victor didn't like, linetype 1 with alpha is an option. linetype = "dotted" is also possible
+  cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-lim,lim)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "red", "Non-cancer" = "grey")) + theme_pubr() + scale_fill_manual(values = c(HCC = "red", "Non-cancer" = "grey")) + 
+       theme(legend.title = element_blank()) +
+         facet_wrap(vars(TF), scales = "free_y")
+pl2
+}
+
+```
+
+Make the bottom TF version, by mean (both -1000,1000 and -500,500)
+
+```{r}
+
+TF_low<-unique(plotdf_low$TF)
+lim<-500
+p0<-mean_plot_bottom(plotdf_low,TF_low[8],lim)
+p2<-mean_plot_bottom(plotdf_low,TF_low[11],lim)+theme(legend.position="none")
+p3<-mean_plot_bottom(plotdf_low,TF_low[10],lim)+theme(legend.position="none")
+p4<-mean_plot_bottom(plotdf_low,TF_low[17],lim)+theme(legend.position="none")
+p5<-mean_plot_bottom(plotdf_low,TF_low[9],lim)+theme(legend.position="none")
+p6<-mean_plot_bottom(plotdf_low,TF_low[1],lim)+theme(legend.position="none")
+p7<-mean_plot_bottom(plotdf_low,TF_low[2],lim)+theme(legend.position="none")
+p8<-mean_plot_bottom(plotdf_low,TF_low[4],lim)+theme(legend.position="none")
+p9<-mean_plot_bottom(plotdf_low,TF_low[6],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+ggsave(pg,filename = "../output/tf_low_means_500_lightwo.pdf", width = 10,height = 7)
+pg
+
+########
+TF_low<-unique(plotdf_low$TF)
+lim<-500
+p0<-mean_plot_top(plotdf_low,TF_low[4],lim)
+p2<-mean_plot_top(plotdf_low,TF_low[5],lim)+theme(legend.position="none")
+p3<-mean_plot_top(plotdf_low,TF_low[3],lim)+theme(legend.position="none")
+p4<-mean_plot_top(plotdf_low,TF_low[6],lim)+theme(legend.position="none")
+p5<-mean_plot_top(plotdf_low,TF_low[7],lim)+theme(legend.position="none")
+p6<-mean_plot_top(plotdf_low,TF_low[9],lim)+theme(legend.position="none")
+p7<-mean_plot_top(plotdf_low,TF_low[2],lim)+theme(legend.position="none")
+p8<-mean_plot_top(plotdf_low,TF_low[1],lim)+theme(legend.position="none")
+p9<-mean_plot_top(plotdf_low,TF_low[8],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+ggsave(pg,filename = "tf_low_means_500_light_red.pdf", width = 10,height = 7)
+pg
+
+
+
+
+######
+lim<-1000
+p0<-mean_plot_bottom(plotdf_low,TF_low[4],lim)
+p2<-mean_plot_bottom(plotdf_low,TF_low[5],lim)+theme(legend.position="none")
+p3<-mean_plot_bottom(plotdf_low,TF_low[3],lim)+theme(legend.position="none")
+p4<-mean_plot_bottom(plotdf_low,TF_low[6],lim)+theme(legend.position="none")
+p5<-mean_plot_bottom(plotdf_low,TF_low[7],lim)+theme(legend.position="none")
+p6<-mean_plot_bottom(plotdf_low,TF_low[9],lim)+theme(legend.position="none")
+p7<-mean_plot_bottom(plotdf_low,TF_low[2],lim)+theme(legend.position="none")
+p8<-mean_plot_bottom(plotdf_low,TF_low[1],lim)+theme(legend.position="none")
+p9<-mean_plot_bottom(plotdf_low,TF_low[8],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "TF_options/tf_low_means_1000_light.pdf", width = 10,height = 7)
+pg
+```
+
+Make the Top TF version, by mean (both -1000,1000 and -500,500)
+
+```{r}
+TF_high<-unique(plotdf_high$TF)
+lim<-500
+p0<-mean_plot_top(plotdf_high,TF_high[12],lim)
+p2<-mean_plot_top(plotdf_high,TF_high[13],lim)+theme(legend.position="none")
+p3<-mean_plot_top(plotdf_high,TF_high[10],lim)+theme(legend.position="none")
+p4<-mean_plot_top(plotdf_high,TF_high[7],lim)+theme(legend.position="none")
+p5<-mean_plot_top(plotdf_high,TF_high[2],lim)+theme(legend.position="none")
+p6<-mean_plot_top(plotdf_high,TF_high[5],lim)+theme(legend.position="none")
+p7<-mean_plot_top(plotdf_high,TF_high[11],lim)+theme(legend.position="none")
+p8<-mean_plot_top(plotdf_high,TF_high[4],lim)+theme(legend.position="none")
+p9<-mean_plot_top(plotdf_high,TF_high[3],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+ggsave(pg,filename = "../output/tf_high_means_500_lightwo.pdf", width = 10,height = 7)
+pg
+###############
+lim<-1000
+p0<-mean_plot_top(plotdf_high,TF_high[4],lim)
+p2<-mean_plot_top(plotdf_high,TF_high[7],lim)+theme(legend.position="none")
+p3<-mean_plot_top(plotdf_high,TF_high[6],lim)+theme(legend.position="none")
+p4<-mean_plot_top(plotdf_high,TF_high[8],lim)+theme(legend.position="none")
+p5<-mean_plot_top(plotdf_high,TF_high[1],lim)+theme(legend.position="none")
+p6<-mean_plot_top(plotdf_high,TF_high[12],lim)+theme(legend.position="none")
+p7<-mean_plot_top(plotdf_high,TF_high[5],lim)+theme(legend.position="none")
+p8<-mean_plot_top(plotdf_high,TF_high[9],lim)+theme(legend.position="none")
+p9<-mean_plot_top(plotdf_high,TF_high[11],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "TF_options/tf_high_means_1000_light.pdf", width = 10,height = 7)
+pg
+
+```
+
+A function to make one facet of a plot with the means
+
+```{r old}
+
+mean_plot_bottom<-function(df,TF2,lim) {
+  plotdf<-df %>% filter(TF==TF2)
+  test<-plotdf %>% group_by(pos,grp1)%>% summarise(Mean=mean(cent_cov), Max=max(cent_cov), Min=min(cent_cov), Median=median(cent_cov), Std=sd(cent_cov)) 
+test<-test %>% arrange(desc(grp1))
+test$TF<-TF2
+pl2 <- 	test %>%
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  #filter(TF %in% tfmhilist[1:9])%>%
+  ggplot(aes(x = pos, y = Mean, color = grp1)) +  
+  geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=1,Other=1), guide="none") +
+  geom_ribbon(aes(ymin=(Mean-Std), ymax=(Mean+Std),color=grp1,fill=grp1), linetype=0, alpha=0.1) + #linetype 2 is the dashed one victor didn't like, linetype 1 with alpha is an option. linetype = "dotted" is also possible. Don't need to change alpha
+  cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-lim,lim)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "blue", "Non-cancer" = "grey")) + theme_pubr() + scale_fill_manual(values = c(HCC = "blue", "Non-cancer" = "grey")) + 
+       theme(legend.title = element_blank()) +
+         facet_wrap(vars(TF), scales = "free_y")
+pl2
+}
+
+
+mean_plot_top<-function(df,TF2,lim) {
+  plotdf<-df %>% filter(TF==TF2)
+  test<-plotdf %>% group_by(pos,grp1)%>% summarise(Mean=mean(cent_cov), Max=max(cent_cov), Min=min(cent_cov), Median=median(cent_cov), Std=sd(cent_cov)) 
+test<-test %>% arrange(desc(grp1))
+test$TF<-TF2
+pl2 <- 	test %>%
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  #filter(TF %in% tfmhilist[1:9])%>%
+  ggplot(aes(x = pos, y = Mean, color = grp1)) +  
+  geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=1,Other=1), guide="none") +
+  geom_ribbon(aes(ymin=(Mean-Std), ymax=(Mean+Std),color=grp1,fill=grp1), linetype=0, alpha=0.1) + #linetype2 without any alpha is the dashed one victor didn't like, linetype 1 with alpha is an option. linetype = "dotted" is also possible
+  cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-lim,lim)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "red", "Non-cancer" = "grey")) + theme_pubr() + scale_fill_manual(values = c(HCC = "red", "Non-cancer" = "grey")) + 
+       theme(legend.title = element_blank()) +
+         facet_wrap(vars(TF), scales = "free_y")
+pl2
+}
+
+
+
+
+
+transp_plot_bottom<-function(df,TF2,lim) {
+  plotdf<-df %>% filter(TF==TF2)
+  
+  pl2<-plotdf %>%
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  #filter(TF %in% tfmhilist[1:9])%>%
+    ggplot(aes(x = pos, y = cent_cov, color = grp1, group = id)) +  
+    geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=.5,Other=0.1), guide="none") +
+    cowplot::theme_cowplot() +
+        geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+    xlim(c(-lim,lim)) +
+        ylab("Relative coverage") +
+        xlab("Position relative to peak (bp)") +
+        scale_color_manual(values = c(HCC = "blue", "Non-cancer" = "grey")) + theme_pubr() +
+        theme(legend.title = element_blank()) +
+          facet_wrap(vars(TF), scales = "free_y")
+pl2
+}
+
+transp_plot_top<-function(df,TF2,lim) {
+  plotdf<-df %>% filter(TF==TF2)
+  
+  pl2<-plotdf %>%
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  #filter(TF %in% tfmhilist[1:9])%>%
+    ggplot(aes(x = pos, y = cent_cov, color = grp1, group = id)) +  
+    geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=.5,Other=0.1), guide="none") +
+    cowplot::theme_cowplot() +
+        geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+    xlim(c(-lim,lim)) +
+        ylab("Relative coverage") +
+        xlab("Position relative to peak (bp)") +
+        scale_color_manual(values = c(HCC = "red", "Non-cancer" = "grey")) + theme_pubr() +
+        theme(legend.title = element_blank()) +
+          facet_wrap(vars(TF), scales = "free_y")
+pl2
+}
+
+```
+
+Make the bottom TF version, by mean (both -1000,1000 and -500,500)
+
+```{r}
+
+TF_low<-unique(plotdf_low$TF)
+lim<-500
+p0<-mean_plot_bottom(plotdf_low,TF_low[4],lim)
+p2<-mean_plot_bottom(plotdf_low,TF_low[5],lim)+theme(legend.position="none")
+p3<-mean_plot_bottom(plotdf_low,TF_low[3],lim)+theme(legend.position="none")
+p4<-mean_plot_bottom(plotdf_low,TF_low[6],lim)+theme(legend.position="none")
+p5<-mean_plot_bottom(plotdf_low,TF_low[7],lim)+theme(legend.position="none")
+p6<-mean_plot_bottom(plotdf_low,TF_low[9],lim)+theme(legend.position="none")
+p7<-mean_plot_bottom(plotdf_low,TF_low[2],lim)+theme(legend.position="none")
+p8<-mean_plot_bottom(plotdf_low,TF_low[1],lim)+theme(legend.position="none")
+p9<-mean_plot_bottom(plotdf_low,TF_low[8],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "TF_options/tf_low_means_500_light.pdf", width = 10,height = 7)
+pg
+
+########
+TF_low<-unique(plotdf_low$TF)
+lim<-500
+p0<-mean_plot_top(plotdf_low,TF_low[4],lim)
+p2<-mean_plot_top(plotdf_low,TF_low[5],lim)+theme(legend.position="none")
+p3<-mean_plot_top(plotdf_low,TF_low[3],lim)+theme(legend.position="none")
+p4<-mean_plot_top(plotdf_low,TF_low[6],lim)+theme(legend.position="none")
+p5<-mean_plot_top(plotdf_low,TF_low[7],lim)+theme(legend.position="none")
+p6<-mean_plot_top(plotdf_low,TF_low[9],lim)+theme(legend.position="none")
+p7<-mean_plot_top(plotdf_low,TF_low[2],lim)+theme(legend.position="none")
+p8<-mean_plot_top(plotdf_low,TF_low[1],lim)+theme(legend.position="none")
+p9<-mean_plot_top(plotdf_low,TF_low[8],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "tf_low_means_500_light_red.pdf", width = 10,height = 7)
+pg
+
+
+
+
+######
+lim<-1000
+p0<-mean_plot_bottom(plotdf_low,TF_low[4],lim)
+p2<-mean_plot_bottom(plotdf_low,TF_low[5],lim)+theme(legend.position="none")
+p3<-mean_plot_bottom(plotdf_low,TF_low[3],lim)+theme(legend.position="none")
+p4<-mean_plot_bottom(plotdf_low,TF_low[6],lim)+theme(legend.position="none")
+p5<-mean_plot_bottom(plotdf_low,TF_low[7],lim)+theme(legend.position="none")
+p6<-mean_plot_bottom(plotdf_low,TF_low[9],lim)+theme(legend.position="none")
+p7<-mean_plot_bottom(plotdf_low,TF_low[2],lim)+theme(legend.position="none")
+p8<-mean_plot_bottom(plotdf_low,TF_low[1],lim)+theme(legend.position="none")
+p9<-mean_plot_bottom(plotdf_low,TF_low[8],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "TF_options/tf_low_means_1000_light.pdf", width = 10,height = 7)
+pg
+```
+
+Make the Top TF version, by mean (both -1000,1000 and -500,500)
+
+```{r}
+TF_high<-unique(plotdf_high$TF)
+lim<-500
+p0<-mean_plot_top(plotdf_high,TF_high[4],lim)
+p2<-mean_plot_top(plotdf_high,TF_high[7],lim)+theme(legend.position="none")
+p3<-mean_plot_top(plotdf_high,TF_high[6],lim)+theme(legend.position="none")
+p4<-mean_plot_top(plotdf_high,TF_high[8],lim)+theme(legend.position="none")
+p5<-mean_plot_top(plotdf_high,TF_high[1],lim)+theme(legend.position="none")
+p6<-mean_plot_top(plotdf_high,TF_high[10],lim)+theme(legend.position="none")
+p7<-mean_plot_top(plotdf_high,TF_high[5],lim)+theme(legend.position="none")
+p8<-mean_plot_top(plotdf_high,TF_high[9],lim)+theme(legend.position="none")
+p9<-mean_plot_top(plotdf_high,TF_high[2],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "TF_options/tf_high_means_500_light.pdf", width = 10,height = 7)
+pg
+###############
+lim<-1000
+p0<-mean_plot_top(plotdf_high,TF_high[4],lim)
+p2<-mean_plot_top(plotdf_high,TF_high[7],lim)+theme(legend.position="none")
+p3<-mean_plot_top(plotdf_high,TF_high[6],lim)+theme(legend.position="none")
+p4<-mean_plot_top(plotdf_high,TF_high[8],lim)+theme(legend.position="none")
+p5<-mean_plot_top(plotdf_high,TF_high[1],lim)+theme(legend.position="none")
+p6<-mean_plot_top(plotdf_high,TF_high[12],lim)+theme(legend.position="none")
+p7<-mean_plot_top(plotdf_high,TF_high[5],lim)+theme(legend.position="none")
+p8<-mean_plot_top(plotdf_high,TF_high[9],lim)+theme(legend.position="none")
+p9<-mean_plot_top(plotdf_high,TF_high[11],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "TF_options/tf_high_means_1000_light.pdf", width = 10,height = 7)
+pg
+
+```
+
+Make the bottom TF version, by transparency (both -1000,1000 and -500,500)
+
+```{r}
+TF_low<-unique(plotdf_low$TF)
+lim<-500
+p0<-transp_plot_bottom(plotdf_low,TF_low[4],lim)
+p2<-transp_plot_bottom(plotdf_low,TF_low[5],lim)+theme(legend.position="none")
+p3<-transp_plot_bottom(plotdf_low,TF_low[3],lim)+theme(legend.position="none")
+p4<-transp_plot_bottom(plotdf_low,TF_low[6],lim)+theme(legend.position="none")
+p5<-transp_plot_bottom(plotdf_low,TF_low[7],lim)+theme(legend.position="none")
+p6<-transp_plot_bottom(plotdf_low,TF_low[9],lim)+theme(legend.position="none")
+p7<-transp_plot_bottom(plotdf_low,TF_low[2],lim)+theme(legend.position="none")
+p8<-transp_plot_bottom(plotdf_low,TF_low[1],lim)+theme(legend.position="none")
+p9<-transp_plot_bottom(plotdf_low,TF_low[8],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "TF_options/tf_low_transp_500.pdf", width = 10,height = 7)
+
+##############
+lim<-1000
+p0<-transp_plot_bottom(plotdf_low,TF_low[4],lim)
+p2<-transp_plot_bottom(plotdf_low,TF_low[5],lim)+theme(legend.position="none")
+p3<-transp_plot_bottom(plotdf_low,TF_low[3],lim)+theme(legend.position="none")
+p4<-transp_plot_bottom(plotdf_low,TF_low[6],lim)+theme(legend.position="none")
+p5<-transp_plot_bottom(plotdf_low,TF_low[7],lim)+theme(legend.position="none")
+p6<-transp_plot_bottom(plotdf_low,TF_low[9],lim)+theme(legend.position="none")
+p7<-transp_plot_bottom(plotdf_low,TF_low[2],lim)+theme(legend.position="none")
+p8<-transp_plot_bottom(plotdf_low,TF_low[1],lim)+theme(legend.position="none")
+p9<-transp_plot_bottom(plotdf_low,TF_low[8],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "TF_options/tf_low_transp_1000.pdf", width = 10,height = 7)
+pg
+```
+
+Make the top TF version, by transparency (both -1000,1000 and -500,500)
+
+```{r}
+TF_high<-unique(plotdf_high$TF)
+lim<-500
+p0<-transp_plot_top(plotdf_high,TF_high[4],lim)
+p2<-transp_plot_top(plotdf_high,TF_high[7],lim)+theme(legend.position="none")
+p3<-transp_plot_top(plotdf_high,TF_high[6],lim)+theme(legend.position="none")
+p4<-transp_plot_top(plotdf_high,TF_high[8],lim)+theme(legend.position="none")
+p5<-transp_plot_top(plotdf_high,TF_high[1],lim)+theme(legend.position="none")
+p6<-transp_plot_top(plotdf_high,TF_high[12],lim)+theme(legend.position="none")
+p7<-transp_plot_top(plotdf_high,TF_high[5],lim)+theme(legend.position="none")
+p8<-transp_plot_top(plotdf_high,TF_high[9],lim)+theme(legend.position="none")
+p9<-transp_plot_top(plotdf_high,TF_high[11],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "TF_options/tf_high_transp_500.pdf", width = 10,height = 7)
+pg
+#########
+
+TF_high<-unique(plotdf_high$TF)
+lim<-1000
+p0<-transp_plot_top(plotdf_high,TF_high[4],lim)
+p2<-transp_plot_top(plotdf_high,TF_high[7],lim)+theme(legend.position="none")
+p3<-transp_plot_top(plotdf_high,TF_high[6],lim)+theme(legend.position="none")
+p4<-transp_plot_top(plotdf_high,TF_high[8],lim)+theme(legend.position="none")
+p5<-transp_plot_top(plotdf_high,TF_high[1],lim)+theme(legend.position="none")
+p6<-transp_plot_top(plotdf_high,TF_high[12],lim)+theme(legend.position="none")
+p7<-transp_plot_top(plotdf_high,TF_high[5],lim)+theme(legend.position="none")
+p8<-transp_plot_top(plotdf_high,TF_high[9],lim)+theme(legend.position="none")
+p9<-transp_plot_top(plotdf_high,TF_high[11],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "TF_options/tf_high_transp_1000.pdf", width = 10,height = 7)
+pg
+```
+
+p sure the rest of this was just me testing stuff pre victor's decision to go with the CI band versions -- but saving for now i guess. delete later?
+
+```{r eval=FALSE, include=FALSE}
+library(tidyverse)
+library(caTools)
+library(ggpubr)
+library(tidyverse)
+library(dplyr)
+#readRDS(file = "plotdf_low") ->plotdf_low
+#readRDS(file = "plotdf_high") ->plotdf_high
+
+
+
+
+
+plotdf_h<-plotdf_high %>% filter(TF=="ATF2")
+pl2 <- 	plotdf_h %>%
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  #filter(TF %in% tfmhilist[1:9])%>%
+  ggplot(aes(x = pos, y = cent_cov, color = grp1, group = id)) +  
+  geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=.5,Other=0.1), guide="none") +
+  cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-500,500)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "red", "Non-cancer" = "grey")) + theme_pubr() +
+       theme(legend.title = element_blank()) +
+         facet_wrap(vars(TF), scales = "free_y")
+
+
+ggsave(pl2,filename = "tf_high.png", width = 10,height = 7)
+
+
+
+readRDS(file = "plotdf_low") ->plotdf_low
+plotdf_l<-plotdf_low %>% filter(TF=="E2F6")
+pl2 <- 	plotdf_l %>%
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  #filter(TF %in% tfmhilist[1:9])%>%
+  ggplot(aes(x = pos, y = cent_cov, color = grp1, group = id)) +  
+  geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=0.5,Other=0.1), guide="none") +
+  cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-500,500)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "blue", "Non-cancer" = "grey")) + theme_pubr() +
+       theme(legend.title = element_blank()) +
+         facet_wrap(vars(TF), scales = "free_y")
+
+#ggsave(pl2,filename = "tf_low.png", width = 10,height = 7)
+
+
+
+```
+
+```{r eval=FALSE, include=FALSE}
+plotdf_h<-plotdf_high %>% filter(TF=="EP300")
+test<-plotdf_h %>% group_by(pos,grp1)%>% summarise(Mean=mean(cent_cov), Max=max(cent_cov), Min=min(cent_cov), Median=median(cent_cov), Std=sd(cent_cov)) 
+test<-test %>% arrange(desc(grp1))
+test$TF<-"EP300"
+pl2 <- 	test %>%
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  #filter(TF %in% tfmhilist[1:9])%>%
+  ggplot(aes(x = pos, y = Mean, color = grp1)) +  
+  geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=1,Other=1), guide="none") +
+  geom_ribbon(aes(ymin=(Mean-Std), ymax=(Mean+Std),color=grp1,fill=grp1), linetype=2, alpha=0.1) +
+  cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-500,500)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "red", "Non-cancer" = "grey")) + theme_pubr() +
+       theme(legend.title = element_blank()) +
+         facet_wrap(vars(TF), scales = "free_y")
+
+
+#ggsave(pl2,filename = "tf_high_CI2.png", width = 10,height = 7)
+
+```
+
+```{r eval=FALSE, include=FALSE}
+plotdf_l<-plotdf_low %>% filter(TF=="E2F6")
+test<-plotdf_l %>% group_by(pos,grp1)%>% summarise(Mean=mean(cent_cov), Max=max(cent_cov), Min=min(cent_cov), Median=median(cent_cov), Std=sd(cent_cov)) 
+test<-test %>% arrange(desc(grp1))
+test$TF<-"E2F6"
+pl2 <- 	test %>%
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  #filter(TF %in% tfmhilist[1:9])%>%
+  ggplot(aes(x = pos, y = Mean, color = grp1)) +  
+  geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=1,Other=1), guide="none") +
+  geom_ribbon(aes(ymin=(Mean-Std), ymax=(Mean+Std),color=grp1,fill=grp1), linetype=2, alpha=0.1) +
+  cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-500,500)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "blue", "Non-cancer" = "grey")) + theme_pubr() +
+       theme(legend.title = element_blank()) +
+         facet_wrap(vars(TF), scales = "free_y")
+
+
+#ggsave(pl2,filename = "tf_low_CI2.png", width = 10,height = 7)
+```

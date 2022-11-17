@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>PreliminaryAnalysis</title>
+
+<script src="site_libs/header-attrs-2.10/header-attrs.js"></script>
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/master/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">foda2022</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">PreliminaryAnalysis</h1>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2022-11-17
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 1
+</p>
+<p>
+<strong>Knit directory:</strong> <code>foda2022/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version
+1.6.2). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges">
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted
+changes </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguncommittedchanges"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The R Markdown is untracked by Git. To know which version of the R
+Markdown file created these results, you’ll want to first commit it to
+the Git repo. If you’re still working on the analysis, you can ignore
+this warning. When you’re finished, you can run
+<code>wflow_publish</code> to commit the R Markdown file and build the
+HTML.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20221117code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20221117)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20221117code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20221117)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrong94de5f7">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong> 94de5f7
+</a>
+</p>
+</div>
+<div id="strongRepositoryversionstrong94de5f7"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version 94de5f7.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    code/.DS_Store
+    Ignored:    code/.Rhistory
+    Ignored:    data/.DS_Store
+    Ignored:    output/.DS_Store
+
+Untracked files:
+    Untracked:  LICENSE
+    Untracked:  analysis/1a.Rmd
+    Untracked:  analysis/1bc.Rmd
+    Untracked:  analysis/3a.Rmd
+    Untracked:  analysis/3b_c.Rmd
+    Untracked:  analysis/4a.Rmd
+    Untracked:  analysis/4b_c.Rmd
+    Untracked:  analysis/4d.Rmd
+    Untracked:  analysis/Clinical_Supplement.Rmd
+    Untracked:  analysis/Fig2AB.Rmd
+    Untracked:  analysis/Fig2C.Rmd
+    Untracked:  analysis/Fig2DE.Rmd
+    Untracked:  analysis/Rob_AFP.Rmd
+    Untracked:  analysis/S1.Rmd
+    Untracked:  analysis/S10_11.Rmd
+    Untracked:  analysis/S6.Rmd
+    Untracked:  analysis/Text_Numbers_Submitted.Rmd
+    Untracked:  analysis/figS12.Rmd
+    Untracked:  code/Model_Lo_Val.Rmd
+    Untracked:  code/TF.rmd
+    Untracked:  code/feature_importance.Rmd
+    Untracked:  code/feature_importanceTF.Rmd
+    Untracked:  code/gsearesuball.Rmd
+    Untracked:  code/gsearesubatrisk.Rmd
+    Untracked:  code/hilistallcohort.txt
+    Untracked:  code/liver.tools/
+    Untracked:  code/plot-roc.r
+    Untracked:  code/prepare_tcga_plot_data.r
+    Untracked:  code/sumcomb.Rmd
+    Untracked:  code/supplementalgsearesub.Rmd
+    Untracked:  code/tfbs_coverage-v1-01val.R
+    Untracked:  code/tfbsmakerhigh.sh
+    Untracked:  code/tfbsmakerlowwo.sh
+    Untracked:  code/tfhilistall.txt
+    Untracked:  code/tfhilistatrisk.txt
+    Untracked:  code/tflowlistall.txt
+    Untracked:  code/tflowlistatrisk.txt
+    Untracked:  data/Alltissuetyperesuball.rds
+    Untracked:  data/Alltissuetyperesubatrisk.rds
+    Untracked:  data/Clinical_Metadata_spreadsheet_8_11.csv
+    Untracked:  data/Clinical_Metadata_spreadsheet_8_11.xlsx
+    Untracked:  data/LUCAS_metadata.xlsx
+    Untracked:  data/TCGA/
+    Untracked:  data/TF_names_ref.csv
+    Untracked:  data/arm_heights.rds
+    Untracked:  data/cohort_rel_cov2.txt
+    Untracked:  data/delfi_features.csv
+    Untracked:  data/high_mean
+    Untracked:  data/lengthnameTF.rds
+    Untracked:  data/liverlengthandorderall.rds
+    Untracked:  data/liverlengthandorderatrisk.rds
+    Untracked:  data/long_bins.csv
+    Untracked:  data/long_bins_val.csv
+    Untracked:  data/low_mean
+    Untracked:  data/lunglengthandorder.rds
+    Untracked:  data/lungn
+    Untracked:  data/processed.rds
+    Untracked:  data/sample_annotation_heatmap.csv
+    Untracked:  data/simulation.xls
+    Untracked:  data/simulation_new_aa.xls
+    Untracked:  data/two_test_plan/
+    Untracked:  data/val_preds.csv
+    Untracked:  data/validation_features.csv
+    Untracked:  data/validation_meta.csv
+    Untracked:  data/validation_rel_cov.txt
+    Untracked:  output/feature_importance.Rmd/
+    Untracked:  output/feature_importance_TF.Rmd/
+    Untracked:  output/word_docs/
+
+Unstaged changes:
+    Modified:   README.md
+    Modified:   analysis/about.Rmd
+    Modified:   analysis/index.Rmd
+    Modified:   analysis/license.Rmd
+    Modified:   code/README.md
+    Modified:   data/README.md
+    Modified:   output/README.md
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+There are no past versions. Publish this analysis with
+<code>wflow_publish()</code> to start tracking its development.
+</p>
+<hr>
+</div>
+</div>
+</div>
+<div id="check-the-numbers" class="section level3">
+<h3>Check the numbers</h3>
+<pre class="r"><code>delfi&lt;-read_csv(here(&quot;data&quot;,&quot;two_test_plan&quot;,&quot;delfi-results_risk.csv&quot;))</code></pre>
+<pre><code>New names:
+* `` -&gt; ...1</code></pre>
+<pre><code>Rows: 208 Columns: 11</code></pre>
+<pre><code>── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (6): id, type, BCLC, Disease, grp_id, cat
+dbl (5): ...1, score.delfi.lr, Draw_number, Treatment before blood draw, sco...</code></pre>
+<pre><code>
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>risk_dat&lt;-roc(delfi$type,delfi$score.delfi.gbm,levels=c(&quot;healthy&quot;,&#39;cancer&#39;)) %&gt;%
+coords(transpose=FALSE)</code></pre>
+<pre><code>Setting direction: controls &lt; cases</code></pre>
+<pre class="r"><code>risk_dat %&gt;% filter(specificity&lt;.8) #### at 80 spec, 85 sens, .26</code></pre>
+<pre><code>     threshold specificity sensitivity
+1         -Inf 0.000000000   1.0000000
+2   0.01497225 0.007518797   1.0000000
+3   0.01607088 0.015037594   1.0000000
+4   0.01717111 0.022556391   1.0000000
+5   0.01750379 0.030075188   1.0000000
+6   0.01810554 0.037593985   1.0000000
+7   0.01891909 0.045112782   1.0000000
+8   0.01968716 0.052631579   1.0000000
+9   0.02010142 0.060150376   1.0000000
+10  0.02039282 0.067669173   1.0000000
+11  0.02100323 0.075187970   1.0000000
+12  0.02160578 0.082706767   1.0000000
+13  0.02173960 0.090225564   1.0000000
+14  0.02186009 0.097744361   1.0000000
+15  0.02208244 0.105263158   1.0000000
+16  0.02230602 0.112781955   1.0000000
+17  0.02287744 0.120300752   1.0000000
+18  0.02413699 0.127819549   1.0000000
+19  0.02510947 0.135338346   1.0000000
+20  0.02533462 0.142857143   1.0000000
+21  0.02598761 0.150375940   1.0000000
+22  0.02686340 0.157894737   1.0000000
+23  0.02733457 0.165413534   1.0000000
+24  0.02773113 0.172932331   1.0000000
+25  0.02846224 0.172932331   0.9866667
+26  0.02904698 0.180451128   0.9866667
+27  0.02928964 0.187969925   0.9866667
+28  0.03032914 0.195488722   0.9866667
+29  0.03126595 0.203007519   0.9866667
+30  0.03155655 0.210526316   0.9866667
+31  0.03194678 0.218045113   0.9866667
+32  0.03267959 0.225563910   0.9866667
+33  0.03350912 0.233082707   0.9866667
+34  0.03404223 0.240601504   0.9866667
+35  0.03487112 0.248120301   0.9866667
+36  0.03546575 0.255639098   0.9866667
+37  0.03586369 0.263157895   0.9866667
+38  0.03660754 0.270676692   0.9866667
+39  0.03716391 0.270676692   0.9733333
+40  0.03759967 0.278195489   0.9733333
+41  0.03848675 0.285714286   0.9733333
+42  0.03916251 0.293233083   0.9733333
+43  0.03974571 0.300751880   0.9733333
+44  0.04085173 0.308270677   0.9733333
+45  0.04160115 0.315789474   0.9733333
+46  0.04187190 0.323308271   0.9733333
+47  0.04274449 0.323308271   0.9600000
+48  0.04356448 0.330827068   0.9600000
+49  0.04431577 0.338345865   0.9600000
+50  0.04507348 0.345864662   0.9600000
+51  0.04569696 0.353383459   0.9600000
+52  0.04631469 0.360902256   0.9600000
+53  0.04899176 0.368421053   0.9600000
+54  0.05315843 0.375939850   0.9600000
+55  0.05535719 0.375939850   0.9466667
+56  0.05636133 0.383458647   0.9466667
+57  0.05711785 0.390977444   0.9466667
+58  0.05809006 0.398496241   0.9466667
+59  0.05960159 0.406015038   0.9466667
+60  0.06112927 0.413533835   0.9466667
+61  0.06173380 0.421052632   0.9466667
+62  0.06191277 0.428571429   0.9466667
+63  0.06242243 0.436090226   0.9466667
+64  0.06490088 0.443609023   0.9466667
+65  0.06812873 0.443609023   0.9333333
+66  0.06937256 0.451127820   0.9333333
+67  0.07045614 0.458646617   0.9333333
+68  0.07376931 0.466165414   0.9333333
+69  0.07631120 0.473684211   0.9333333
+70  0.07657607 0.481203008   0.9333333
+71  0.07716890 0.488721805   0.9333333
+72  0.07821280 0.496240602   0.9333333
+73  0.07990134 0.503759398   0.9333333
+74  0.08166701 0.511278195   0.9333333
+75  0.08237813 0.518796992   0.9333333
+76  0.08376006 0.526315789   0.9333333
+77  0.08558362 0.533834586   0.9333333
+78  0.08634679 0.541353383   0.9333333
+79  0.09166375 0.548872180   0.9333333
+80  0.09719485 0.556390977   0.9333333
+81  0.09811874 0.563909774   0.9333333
+82  0.09972029 0.571428571   0.9333333
+83  0.10116657 0.571428571   0.9200000
+84  0.10293165 0.578947368   0.9200000
+85  0.10460097 0.586466165   0.9200000
+86  0.10623689 0.593984962   0.9200000
+87  0.10860126 0.601503759   0.9200000
+88  0.11191347 0.609022556   0.9200000
+89  0.11552234 0.616541353   0.9200000
+90  0.11930483 0.624060150   0.9200000
+91  0.12263009 0.631578947   0.9200000
+92  0.12686856 0.639097744   0.9200000
+93  0.13597382 0.646616541   0.9200000
+94  0.14429435 0.654135338   0.9200000
+95  0.14915558 0.661654135   0.9200000
+96  0.15252593 0.669172932   0.9200000
+97  0.15494151 0.676691729   0.9200000
+98  0.15651308 0.684210526   0.9200000
+99  0.15954965 0.691729323   0.9200000
+100 0.16690243 0.699248120   0.9200000
+101 0.17207895 0.706766917   0.9200000
+102 0.17408462 0.706766917   0.9066667
+103 0.18143206 0.714285714   0.9066667
+104 0.19294990 0.721804511   0.9066667
+105 0.20202856 0.721804511   0.8933333
+106 0.20675406 0.729323308   0.8933333
+107 0.20862149 0.736842105   0.8933333
+108 0.21257807 0.736842105   0.8800000
+109 0.21788400 0.744360902   0.8800000
+110 0.22002854 0.744360902   0.8666667
+111 0.22099018 0.751879699   0.8666667
+112 0.23059925 0.751879699   0.8533333
+113 0.23983023 0.759398496   0.8533333
+114 0.24254084 0.766917293   0.8533333
+115 0.24604067 0.774436090   0.8533333
+116 0.24798242 0.781954887   0.8533333
+117 0.25367331 0.789473684   0.8533333
+118 0.26001855 0.796992481   0.8533333</code></pre>
+<pre class="r"><code>early&lt;-delfi %&gt;% filter(!BCLC %in% c(&quot;B&quot;,&quot;C&quot;))
+early_dat&lt;-roc(early$type,early$score.delfi.gbm,levels=c(&quot;healthy&quot;,&#39;cancer&#39;)) %&gt;%
+coords(transpose=FALSE)</code></pre>
+<pre><code>Setting direction: controls &lt; cases</code></pre>
+<pre class="r"><code>risk_dat %&gt;% filter(specificity&lt;.8) #### at 80 spec, 85 sens, .26</code></pre>
+<pre><code>     threshold specificity sensitivity
+1         -Inf 0.000000000   1.0000000
+2   0.01497225 0.007518797   1.0000000
+3   0.01607088 0.015037594   1.0000000
+4   0.01717111 0.022556391   1.0000000
+5   0.01750379 0.030075188   1.0000000
+6   0.01810554 0.037593985   1.0000000
+7   0.01891909 0.045112782   1.0000000
+8   0.01968716 0.052631579   1.0000000
+9   0.02010142 0.060150376   1.0000000
+10  0.02039282 0.067669173   1.0000000
+11  0.02100323 0.075187970   1.0000000
+12  0.02160578 0.082706767   1.0000000
+13  0.02173960 0.090225564   1.0000000
+14  0.02186009 0.097744361   1.0000000
+15  0.02208244 0.105263158   1.0000000
+16  0.02230602 0.112781955   1.0000000
+17  0.02287744 0.120300752   1.0000000
+18  0.02413699 0.127819549   1.0000000
+19  0.02510947 0.135338346   1.0000000
+20  0.02533462 0.142857143   1.0000000
+21  0.02598761 0.150375940   1.0000000
+22  0.02686340 0.157894737   1.0000000
+23  0.02733457 0.165413534   1.0000000
+24  0.02773113 0.172932331   1.0000000
+25  0.02846224 0.172932331   0.9866667
+26  0.02904698 0.180451128   0.9866667
+27  0.02928964 0.187969925   0.9866667
+28  0.03032914 0.195488722   0.9866667
+29  0.03126595 0.203007519   0.9866667
+30  0.03155655 0.210526316   0.9866667
+31  0.03194678 0.218045113   0.9866667
+32  0.03267959 0.225563910   0.9866667
+33  0.03350912 0.233082707   0.9866667
+34  0.03404223 0.240601504   0.9866667
+35  0.03487112 0.248120301   0.9866667
+36  0.03546575 0.255639098   0.9866667
+37  0.03586369 0.263157895   0.9866667
+38  0.03660754 0.270676692   0.9866667
+39  0.03716391 0.270676692   0.9733333
+40  0.03759967 0.278195489   0.9733333
+41  0.03848675 0.285714286   0.9733333
+42  0.03916251 0.293233083   0.9733333
+43  0.03974571 0.300751880   0.9733333
+44  0.04085173 0.308270677   0.9733333
+45  0.04160115 0.315789474   0.9733333
+46  0.04187190 0.323308271   0.9733333
+47  0.04274449 0.323308271   0.9600000
+48  0.04356448 0.330827068   0.9600000
+49  0.04431577 0.338345865   0.9600000
+50  0.04507348 0.345864662   0.9600000
+51  0.04569696 0.353383459   0.9600000
+52  0.04631469 0.360902256   0.9600000
+53  0.04899176 0.368421053   0.9600000
+54  0.05315843 0.375939850   0.9600000
+55  0.05535719 0.375939850   0.9466667
+56  0.05636133 0.383458647   0.9466667
+57  0.05711785 0.390977444   0.9466667
+58  0.05809006 0.398496241   0.9466667
+59  0.05960159 0.406015038   0.9466667
+60  0.06112927 0.413533835   0.9466667
+61  0.06173380 0.421052632   0.9466667
+62  0.06191277 0.428571429   0.9466667
+63  0.06242243 0.436090226   0.9466667
+64  0.06490088 0.443609023   0.9466667
+65  0.06812873 0.443609023   0.9333333
+66  0.06937256 0.451127820   0.9333333
+67  0.07045614 0.458646617   0.9333333
+68  0.07376931 0.466165414   0.9333333
+69  0.07631120 0.473684211   0.9333333
+70  0.07657607 0.481203008   0.9333333
+71  0.07716890 0.488721805   0.9333333
+72  0.07821280 0.496240602   0.9333333
+73  0.07990134 0.503759398   0.9333333
+74  0.08166701 0.511278195   0.9333333
+75  0.08237813 0.518796992   0.9333333
+76  0.08376006 0.526315789   0.9333333
+77  0.08558362 0.533834586   0.9333333
+78  0.08634679 0.541353383   0.9333333
+79  0.09166375 0.548872180   0.9333333
+80  0.09719485 0.556390977   0.9333333
+81  0.09811874 0.563909774   0.9333333
+82  0.09972029 0.571428571   0.9333333
+83  0.10116657 0.571428571   0.9200000
+84  0.10293165 0.578947368   0.9200000
+85  0.10460097 0.586466165   0.9200000
+86  0.10623689 0.593984962   0.9200000
+87  0.10860126 0.601503759   0.9200000
+88  0.11191347 0.609022556   0.9200000
+89  0.11552234 0.616541353   0.9200000
+90  0.11930483 0.624060150   0.9200000
+91  0.12263009 0.631578947   0.9200000
+92  0.12686856 0.639097744   0.9200000
+93  0.13597382 0.646616541   0.9200000
+94  0.14429435 0.654135338   0.9200000
+95  0.14915558 0.661654135   0.9200000
+96  0.15252593 0.669172932   0.9200000
+97  0.15494151 0.676691729   0.9200000
+98  0.15651308 0.684210526   0.9200000
+99  0.15954965 0.691729323   0.9200000
+100 0.16690243 0.699248120   0.9200000
+101 0.17207895 0.706766917   0.9200000
+102 0.17408462 0.706766917   0.9066667
+103 0.18143206 0.714285714   0.9066667
+104 0.19294990 0.721804511   0.9066667
+105 0.20202856 0.721804511   0.8933333
+106 0.20675406 0.729323308   0.8933333
+107 0.20862149 0.736842105   0.8933333
+108 0.21257807 0.736842105   0.8800000
+109 0.21788400 0.744360902   0.8800000
+110 0.22002854 0.744360902   0.8666667
+111 0.22099018 0.751879699   0.8666667
+112 0.23059925 0.751879699   0.8533333
+113 0.23983023 0.759398496   0.8533333
+114 0.24254084 0.766917293   0.8533333
+115 0.24604067 0.774436090   0.8533333
+116 0.24798242 0.781954887   0.8533333
+117 0.25367331 0.789473684   0.8533333
+118 0.26001855 0.796992481   0.8533333</code></pre>
+<pre class="r"><code>#screening
+#delfi&lt;-read_csv(here(&quot;data&quot;,&quot;two_test_plan&quot;,&quot;delfi-results_screen.csv&quot;)) #WE SUBMITTED QUOTING NUMBER FROM THE WRONG MODEL --- 10/9 VV say&#39;s we will fix later. Below is correct
+delfi&lt;-read_csv(here(&quot;data&quot;,&quot;two_test_plan&quot;,&quot;delfi-tf-results_screen.csv&quot;)) </code></pre>
+<pre><code>New names:
+* `` -&gt; ...1</code></pre>
+<pre><code>Rows: 368 Columns: 11</code></pre>
+<pre><code>── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (6): id, type, BCLC, Disease, grp_id, cat
+dbl (5): ...1, score.delfi.lr, Draw_number, Treatment before blood draw, sco...</code></pre>
+<pre><code>
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>all_dat&lt;-roc(delfi$type,delfi$score.delfi.lr,levels=c(&quot;healthy&quot;,&#39;cancer&#39;)) %&gt;%
+coords(transpose=FALSE)</code></pre>
+<pre><code>Setting direction: controls &lt; cases</code></pre>
+<pre class="r"><code>all_dat %&gt;% filter(specificity&lt;.999)</code></pre>
+<pre><code>       threshold specificity sensitivity
+1           -Inf 0.000000000   1.0000000
+2   0.0002662708 0.003412969   1.0000000
+3   0.0005116916 0.006825939   1.0000000
+4   0.0006604386 0.010238908   1.0000000
+5   0.0008644036 0.013651877   1.0000000
+6   0.0009697035 0.017064846   1.0000000
+7   0.0010527499 0.020477816   1.0000000
+8   0.0011895359 0.023890785   1.0000000
+9   0.0014496184 0.027303754   1.0000000
+10  0.0016889208 0.030716724   1.0000000
+11  0.0017540524 0.034129693   1.0000000
+12  0.0018327854 0.037542662   1.0000000
+13  0.0018903452 0.040955631   1.0000000
+14  0.0019243305 0.044368601   1.0000000
+15  0.0019867076 0.047781570   1.0000000
+16  0.0020309526 0.051194539   1.0000000
+17  0.0020527959 0.054607509   1.0000000
+18  0.0021096747 0.058020478   1.0000000
+19  0.0021813543 0.061433447   1.0000000
+20  0.0023027394 0.064846416   1.0000000
+21  0.0025585891 0.068259386   1.0000000
+22  0.0027470576 0.071672355   1.0000000
+23  0.0028449482 0.075085324   1.0000000
+24  0.0029856968 0.078498294   1.0000000
+25  0.0030631246 0.081911263   1.0000000
+26  0.0031387177 0.085324232   1.0000000
+27  0.0032479912 0.088737201   1.0000000
+28  0.0033449962 0.092150171   1.0000000
+29  0.0034173094 0.095563140   1.0000000
+30  0.0035747363 0.098976109   1.0000000
+31  0.0037535409 0.102389078   1.0000000
+32  0.0040586760 0.105802048   1.0000000
+33  0.0043638395 0.109215017   1.0000000
+34  0.0044343232 0.112627986   1.0000000
+35  0.0045020426 0.116040956   1.0000000
+36  0.0045586673 0.119453925   1.0000000
+37  0.0046083489 0.122866894   1.0000000
+38  0.0047826715 0.126279863   1.0000000
+39  0.0049565637 0.129692833   1.0000000
+40  0.0049893798 0.133105802   1.0000000
+41  0.0050032938 0.136518771   1.0000000
+42  0.0051670663 0.139931741   1.0000000
+43  0.0053750633 0.143344710   1.0000000
+44  0.0055709974 0.146757679   1.0000000
+45  0.0057715253 0.150170648   1.0000000
+46  0.0058556355 0.153583618   1.0000000
+47  0.0059009444 0.156996587   1.0000000
+48  0.0059847546 0.160409556   1.0000000
+49  0.0061172415 0.163822526   1.0000000
+50  0.0062224935 0.167235495   1.0000000
+51  0.0062904347 0.170648464   1.0000000
+52  0.0064195118 0.174061433   1.0000000
+53  0.0065457767 0.177474403   1.0000000
+54  0.0067370545 0.180887372   1.0000000
+55  0.0069081185 0.184300341   1.0000000
+56  0.0071872487 0.187713311   1.0000000
+57  0.0074756346 0.191126280   1.0000000
+58  0.0075276045 0.194539249   1.0000000
+59  0.0075782335 0.197952218   1.0000000
+60  0.0077901927 0.201365188   1.0000000
+61  0.0079955924 0.204778157   1.0000000
+62  0.0080685496 0.208191126   1.0000000
+63  0.0081979220 0.211604096   1.0000000
+64  0.0082957938 0.215017065   1.0000000
+65  0.0084355159 0.218430034   1.0000000
+66  0.0086292296 0.221843003   1.0000000
+67  0.0088702449 0.225255973   1.0000000
+68  0.0090281636 0.228668942   1.0000000
+69  0.0090417107 0.232081911   1.0000000
+70  0.0090595865 0.235494881   1.0000000
+71  0.0091438552 0.238907850   1.0000000
+72  0.0092178747 0.242320819   1.0000000
+73  0.0092320437 0.245733788   1.0000000
+74  0.0092984075 0.249146758   1.0000000
+75  0.0094551716 0.252559727   1.0000000
+76  0.0097301511 0.255972696   1.0000000
+77  0.0099654853 0.259385666   1.0000000
+78  0.0101835718 0.262798635   1.0000000
+79  0.0103451515 0.266211604   1.0000000
+80  0.0104897088 0.269624573   1.0000000
+81  0.0106583515 0.273037543   1.0000000
+82  0.0108158680 0.276450512   1.0000000
+83  0.0109506459 0.279863481   1.0000000
+84  0.0112241742 0.283276451   1.0000000
+85  0.0115708958 0.286689420   1.0000000
+86  0.0116555453 0.290102389   1.0000000
+87  0.0117221353 0.293515358   1.0000000
+88  0.0117949296 0.296928328   1.0000000
+89  0.0120118983 0.300341297   1.0000000
+90  0.0122269997 0.303754266   1.0000000
+91  0.0122490642 0.307167235   1.0000000
+92  0.0123452898 0.310580205   1.0000000
+93  0.0124487376 0.313993174   1.0000000
+94  0.0125676594 0.317406143   1.0000000
+95  0.0126816427 0.320819113   1.0000000
+96  0.0127648990 0.324232082   1.0000000
+97  0.0128405107 0.327645051   1.0000000
+98  0.0128652114 0.331058020   1.0000000
+99  0.0129531250 0.334470990   1.0000000
+100 0.0131843436 0.337883959   1.0000000
+101 0.0133719317 0.341296928   1.0000000
+102 0.0138777612 0.344709898   1.0000000
+103 0.0143921729 0.348122867   1.0000000
+104 0.0146249849 0.351535836   1.0000000
+105 0.0149247375 0.354948805   1.0000000
+106 0.0150299474 0.358361775   1.0000000
+107 0.0150826790 0.361774744   1.0000000
+108 0.0152203782 0.365187713   1.0000000
+109 0.0154672017 0.368600683   1.0000000
+110 0.0157632939 0.372013652   1.0000000
+111 0.0159223766 0.375426621   1.0000000
+112 0.0159601752 0.378839590   1.0000000
+113 0.0160623759 0.382252560   1.0000000
+114 0.0162282283 0.385665529   1.0000000
+115 0.0163739860 0.389078498   1.0000000
+116 0.0165746004 0.392491468   1.0000000
+117 0.0167490496 0.395904437   1.0000000
+118 0.0168151311 0.399317406   1.0000000
+119 0.0168847677 0.402730375   1.0000000
+120 0.0175721700 0.406143345   1.0000000
+121 0.0182824746 0.409556314   1.0000000
+122 0.0183780014 0.412969283   1.0000000
+123 0.0185971762 0.416382253   1.0000000
+124 0.0188221096 0.419795222   1.0000000
+125 0.0188878821 0.423208191   1.0000000
+126 0.0191211200 0.426621160   1.0000000
+127 0.0194252613 0.430034130   1.0000000
+128 0.0195835764 0.433447099   1.0000000
+129 0.0196587950 0.436860068   1.0000000
+130 0.0197081672 0.440273038   1.0000000
+131 0.0200899658 0.443686007   1.0000000
+132 0.0206886431 0.447098976   1.0000000
+133 0.0210954624 0.450511945   1.0000000
+134 0.0212636179 0.453924915   1.0000000
+135 0.0212926325 0.457337884   1.0000000
+136 0.0215328272 0.460750853   1.0000000
+137 0.0218038714 0.464163823   1.0000000
+138 0.0218691799 0.467576792   1.0000000
+139 0.0219907064 0.470989761   1.0000000
+140 0.0223678649 0.474402730   1.0000000
+141 0.0232066252 0.477815700   1.0000000
+142 0.0238796687 0.481228669   1.0000000
+143 0.0240172633 0.484641638   1.0000000
+144 0.0245152923 0.488054608   1.0000000
+145 0.0251229811 0.491467577   1.0000000
+146 0.0258548036 0.494880546   1.0000000
+147 0.0264468707 0.498293515   1.0000000
+148 0.0266487901 0.501706485   1.0000000
+149 0.0268837282 0.505119454   1.0000000
+150 0.0269341856 0.508532423   1.0000000
+151 0.0271089682 0.511945392   1.0000000
+152 0.0273865336 0.515358362   1.0000000
+153 0.0276530314 0.518771331   1.0000000
+154 0.0278656955 0.522184300   1.0000000
+155 0.0279414807 0.525597270   1.0000000
+156 0.0280191120 0.529010239   1.0000000
+157 0.0281395443 0.532423208   1.0000000
+158 0.0282875261 0.535836177   1.0000000
+159 0.0287270748 0.539249147   1.0000000
+160 0.0291389572 0.542662116   1.0000000
+161 0.0292308689 0.546075085   1.0000000
+162 0.0294233223 0.549488055   1.0000000
+163 0.0300290407 0.552901024   1.0000000
+164 0.0313328458 0.556313993   1.0000000
+165 0.0323218296 0.559726962   1.0000000
+166 0.0327305633 0.563139932   1.0000000
+167 0.0331080174 0.566552901   1.0000000
+168 0.0334256042 0.569965870   1.0000000
+169 0.0338138017 0.573378840   1.0000000
+170 0.0341395131 0.576791809   1.0000000
+171 0.0343546229 0.580204778   1.0000000
+172 0.0345629852 0.583617747   1.0000000
+173 0.0348096750 0.587030717   1.0000000
+174 0.0349971012 0.590443686   1.0000000
+175 0.0354756464 0.593856655   1.0000000
+176 0.0358856072 0.597269625   1.0000000
+177 0.0366234122 0.600682594   1.0000000
+178 0.0374393630 0.604095563   1.0000000
+179 0.0376851359 0.607508532   1.0000000
+180 0.0379553377 0.610921502   1.0000000
+181 0.0381984690 0.614334471   1.0000000
+182 0.0389437700 0.617747440   1.0000000
+183 0.0396914449 0.621160410   1.0000000
+184 0.0398895686 0.621160410   0.9866667
+185 0.0406483111 0.624573379   0.9866667
+186 0.0413452530 0.627986348   0.9866667
+187 0.0413832729 0.631399317   0.9866667
+188 0.0415042876 0.634812287   0.9866667
+189 0.0416584010 0.638225256   0.9866667
+190 0.0417180072 0.641638225   0.9866667
+191 0.0420106313 0.645051195   0.9866667
+192 0.0423767215 0.648464164   0.9866667
+193 0.0425278512 0.651877133   0.9866667
+194 0.0426076540 0.655290102   0.9866667
+195 0.0428431487 0.658703072   0.9866667
+196 0.0431878427 0.662116041   0.9866667
+197 0.0434920123 0.665529010   0.9866667
+198 0.0437171619 0.668941980   0.9866667
+199 0.0438856333 0.672354949   0.9866667
+200 0.0450006278 0.675767918   0.9866667
+201 0.0461649374 0.679180887   0.9866667
+202 0.0464032387 0.682593857   0.9866667
+203 0.0465058062 0.686006826   0.9866667
+204 0.0467244587 0.689419795   0.9866667
+205 0.0470500661 0.692832765   0.9866667
+206 0.0472107385 0.696245734   0.9866667
+207 0.0472617091 0.699658703   0.9866667
+208 0.0473795881 0.703071672   0.9866667
+209 0.0475374101 0.706484642   0.9866667
+210 0.0484606352 0.709897611   0.9866667
+211 0.0495483910 0.713310580   0.9866667
+212 0.0502798750 0.716723549   0.9866667
+213 0.0510688763 0.720136519   0.9866667
+214 0.0515272581 0.723549488   0.9866667
+215 0.0518994171 0.726962457   0.9866667
+216 0.0522849658 0.730375427   0.9866667
+217 0.0529844948 0.733788396   0.9866667
+218 0.0541506544 0.737201365   0.9866667
+219 0.0548226296 0.740614334   0.9866667
+220 0.0552058157 0.744027304   0.9866667
+221 0.0567008788 0.747440273   0.9866667
+222 0.0581817195 0.750853242   0.9866667
+223 0.0590969553 0.754266212   0.9866667
+224 0.0599570871 0.757679181   0.9866667
+225 0.0614665148 0.761092150   0.9866667
+226 0.0627827506 0.764505119   0.9866667
+227 0.0635523443 0.767918089   0.9866667
+228 0.0642524656 0.771331058   0.9866667
+229 0.0645667808 0.774744027   0.9866667
+230 0.0658652922 0.778156997   0.9866667
+231 0.0677118208 0.781569966   0.9866667
+232 0.0696655144 0.784982935   0.9866667
+233 0.0710952839 0.788395904   0.9866667
+234 0.0729985995 0.791808874   0.9866667
+235 0.0750099690 0.795221843   0.9866667
+236 0.0757225417 0.798634812   0.9866667
+237 0.0762056567 0.802047782   0.9866667
+238 0.0766968586 0.805460751   0.9866667
+239 0.0771017315 0.808873720   0.9866667
+240 0.0772588763 0.812286689   0.9866667
+241 0.0778305967 0.815699659   0.9866667
+242 0.0790097229 0.819112628   0.9866667
+243 0.0811106196 0.822525597   0.9866667
+244 0.0828522020 0.825938567   0.9866667
+245 0.0848919519 0.829351536   0.9866667
+246 0.0877273219 0.832764505   0.9866667
+247 0.0893953444 0.836177474   0.9866667
+248 0.0903524271 0.839590444   0.9866667
+249 0.0908099297 0.843003413   0.9866667
+250 0.0912423454 0.846416382   0.9866667
+251 0.0921489481 0.849829352   0.9866667
+252 0.0930288727 0.853242321   0.9866667
+253 0.0946016997 0.856655290   0.9866667
+254 0.0960483934 0.860068259   0.9866667
+255 0.0964820329 0.863481229   0.9866667
+256 0.0967499587 0.866894198   0.9866667
+257 0.0977917919 0.870307167   0.9866667
+258 0.0992775708 0.873720137   0.9866667
+259 0.1010760683 0.877133106   0.9866667
+260 0.1030490499 0.880546075   0.9866667
+261 0.1041358833 0.883959044   0.9866667
+262 0.1049672394 0.887372014   0.9866667
+263 0.1081245012 0.887372014   0.9733333
+264 0.1113411779 0.890784983   0.9733333
+265 0.1121808455 0.894197952   0.9733333
+266 0.1138571074 0.897610922   0.9733333
+267 0.1156032026 0.901023891   0.9733333
+268 0.1169279984 0.904436860   0.9733333
+269 0.1184590415 0.907849829   0.9733333
+270 0.1196043661 0.911262799   0.9733333
+271 0.1203245040 0.914675768   0.9733333
+272 0.1257039775 0.918088737   0.9733333
+273 0.1310684736 0.918088737   0.9600000
+274 0.1372121079 0.918088737   0.9466667
+275 0.1437239605 0.921501706   0.9466667
+276 0.1466880560 0.924914676   0.9466667
+277 0.1492152423 0.928327645   0.9466667
+278 0.1514891119 0.931740614   0.9466667
+279 0.1591500811 0.935153584   0.9466667
+280 0.1664999013 0.938566553   0.9466667
+281 0.1727031821 0.941979522   0.9466667
+282 0.1782322848 0.945392491   0.9466667
+283 0.1925728153 0.945392491   0.9333333
+284 0.2064074721 0.948805461   0.9333333
+285 0.2106630345 0.948805461   0.9200000
+286 0.2178457867 0.952218430   0.9200000
+287 0.2282689265 0.955631399   0.9200000
+288 0.2376899114 0.959044369   0.9200000
+289 0.2439635571 0.962457338   0.9200000
+290 0.2498423027 0.965870307   0.9200000
+291 0.2550272572 0.969283276   0.9200000
+292 0.2701197358 0.972696246   0.9200000
+293 0.2921943089 0.972696246   0.9066667
+294 0.3027116329 0.972696246   0.8933333
+295 0.3056269073 0.972696246   0.8800000
+296 0.3146338525 0.976109215   0.8800000
+297 0.3242369216 0.979522184   0.8800000
+298 0.3443584974 0.979522184   0.8666667
+299 0.3718204625 0.979522184   0.8533333
+300 0.3902397529 0.979522184   0.8400000
+301 0.4095690312 0.982935154   0.8400000
+302 0.4345239107 0.982935154   0.8266667
+303 0.4529903037 0.982935154   0.8133333
+304 0.4874212951 0.982935154   0.8000000
+305 0.5185100209 0.982935154   0.7866667
+306 0.5245426036 0.986348123   0.7866667
+307 0.5369329486 0.986348123   0.7733333
+308 0.5641757006 0.986348123   0.7600000
+309 0.5892658241 0.986348123   0.7466667
+310 0.6039853238 0.989761092   0.7466667
+311 0.6171428057 0.989761092   0.7333333
+312 0.6262930650 0.989761092   0.7200000
+313 0.6342087925 0.993174061   0.7200000
+314 0.6381959380 0.993174061   0.7066667
+315 0.6462599746 0.993174061   0.6933333
+316 0.6593828040 0.993174061   0.6800000
+317 0.6693442641 0.993174061   0.6666667
+318 0.6900644519 0.993174061   0.6533333
+319 0.7247032231 0.993174061   0.6400000
+320 0.7464021941 0.993174061   0.6266667
+321 0.7542480829 0.993174061   0.6133333
+322 0.7591730010 0.993174061   0.6000000
+323 0.7641889584 0.993174061   0.5866667
+324 0.7712734757 0.993174061   0.5733333
+325 0.7846880669 0.993174061   0.5600000
+326 0.7990114724 0.993174061   0.5466667
+327 0.8048654433 0.993174061   0.5333333
+328 0.8092150543 0.993174061   0.5200000
+329 0.8252656546 0.993174061   0.5066667
+330 0.8471545669 0.993174061   0.4933333
+331 0.8563312984 0.993174061   0.4800000
+332 0.8700699529 0.993174061   0.4666667
+333 0.8908452832 0.993174061   0.4533333
+334 0.9017736984 0.993174061   0.4400000
+335 0.9114008547 0.993174061   0.4266667
+336 0.9194122681 0.993174061   0.4133333
+337 0.9292248596 0.996587031   0.4133333
+338 0.9381817896 0.996587031   0.4000000
+339 0.9431652031 0.996587031   0.3866667
+340 0.9540986732 0.996587031   0.3733333
+341 0.9619168043 0.996587031   0.3600000
+342 0.9633270490 0.996587031   0.3466667
+343 0.9654812845 0.996587031   0.3333333
+344 0.9677214182 0.996587031   0.3200000
+345 0.9697516365 0.996587031   0.3066667
+346 0.9723749980 0.996587031   0.2933333</code></pre>
+<pre class="r"><code>delfi&lt;-read_csv(here(&quot;data&quot;,&quot;two_test_plan&quot;,&quot;delfi-tf-results_screen.csv&quot;)) </code></pre>
+<pre><code>New names:
+* `` -&gt; ...1</code></pre>
+<pre><code>Rows: 368 Columns: 11</code></pre>
+<pre><code>── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (6): id, type, BCLC, Disease, grp_id, cat
+dbl (5): ...1, score.delfi.lr, Draw_number, Treatment before blood draw, sco...</code></pre>
+<pre><code>
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>delfi &lt;- delfi %&gt;% filter(BCLC != &quot;0&quot; &amp; BCLC != &quot;B&quot; &amp; BCLC != &quot;C&quot;)
+all_dat&lt;-roc(delfi$type,delfi$score.delfi.lr,levels=c(&quot;healthy&quot;,&#39;cancer&#39;)) %&gt;%
+coords(transpose=FALSE)</code></pre>
+<pre><code>Setting direction: controls &lt; cases</code></pre>
+<pre class="r"><code>all_dat %&gt;% filter(specificity&lt;.999) </code></pre>
+<pre><code>       threshold specificity sensitivity
+1           -Inf 0.000000000  1.00000000
+2   0.0002662708 0.003412969  1.00000000
+3   0.0005116916 0.006825939  1.00000000
+4   0.0006604386 0.010238908  1.00000000
+5   0.0008644036 0.013651877  1.00000000
+6   0.0009697035 0.017064846  1.00000000
+7   0.0010527499 0.020477816  1.00000000
+8   0.0011895359 0.023890785  1.00000000
+9   0.0014496184 0.027303754  1.00000000
+10  0.0016889208 0.030716724  1.00000000
+11  0.0017540524 0.034129693  1.00000000
+12  0.0018327854 0.037542662  1.00000000
+13  0.0018903452 0.040955631  1.00000000
+14  0.0019243305 0.044368601  1.00000000
+15  0.0019867076 0.047781570  1.00000000
+16  0.0020309526 0.051194539  1.00000000
+17  0.0020527959 0.054607509  1.00000000
+18  0.0021096747 0.058020478  1.00000000
+19  0.0021813543 0.061433447  1.00000000
+20  0.0023027394 0.064846416  1.00000000
+21  0.0025585891 0.068259386  1.00000000
+22  0.0027470576 0.071672355  1.00000000
+23  0.0028449482 0.075085324  1.00000000
+24  0.0029856968 0.078498294  1.00000000
+25  0.0030631246 0.081911263  1.00000000
+26  0.0031387177 0.085324232  1.00000000
+27  0.0032479912 0.088737201  1.00000000
+28  0.0033449962 0.092150171  1.00000000
+29  0.0034173094 0.095563140  1.00000000
+30  0.0035747363 0.098976109  1.00000000
+31  0.0037535409 0.102389078  1.00000000
+32  0.0040586760 0.105802048  1.00000000
+33  0.0043638395 0.109215017  1.00000000
+34  0.0044343232 0.112627986  1.00000000
+35  0.0045020426 0.116040956  1.00000000
+36  0.0045586673 0.119453925  1.00000000
+37  0.0046083489 0.122866894  1.00000000
+38  0.0047826715 0.126279863  1.00000000
+39  0.0049565637 0.129692833  1.00000000
+40  0.0049893798 0.133105802  1.00000000
+41  0.0050032938 0.136518771  1.00000000
+42  0.0051670663 0.139931741  1.00000000
+43  0.0053750633 0.143344710  1.00000000
+44  0.0055709974 0.146757679  1.00000000
+45  0.0057715253 0.150170648  1.00000000
+46  0.0058556355 0.153583618  1.00000000
+47  0.0059009444 0.156996587  1.00000000
+48  0.0059847546 0.160409556  1.00000000
+49  0.0061172415 0.163822526  1.00000000
+50  0.0062224935 0.167235495  1.00000000
+51  0.0062904347 0.170648464  1.00000000
+52  0.0064195118 0.174061433  1.00000000
+53  0.0065457767 0.177474403  1.00000000
+54  0.0067370545 0.180887372  1.00000000
+55  0.0069081185 0.184300341  1.00000000
+56  0.0071872487 0.187713311  1.00000000
+57  0.0074756346 0.191126280  1.00000000
+58  0.0075276045 0.194539249  1.00000000
+59  0.0075782335 0.197952218  1.00000000
+60  0.0077901927 0.201365188  1.00000000
+61  0.0079955924 0.204778157  1.00000000
+62  0.0080685496 0.208191126  1.00000000
+63  0.0081979220 0.211604096  1.00000000
+64  0.0082957938 0.215017065  1.00000000
+65  0.0084355159 0.218430034  1.00000000
+66  0.0086292296 0.221843003  1.00000000
+67  0.0088702449 0.225255973  1.00000000
+68  0.0090281636 0.228668942  1.00000000
+69  0.0090417107 0.232081911  1.00000000
+70  0.0090595865 0.235494881  1.00000000
+71  0.0091438552 0.238907850  1.00000000
+72  0.0092178747 0.242320819  1.00000000
+73  0.0092320437 0.245733788  1.00000000
+74  0.0092984075 0.249146758  1.00000000
+75  0.0094551716 0.252559727  1.00000000
+76  0.0097301511 0.255972696  1.00000000
+77  0.0099654853 0.259385666  1.00000000
+78  0.0101835718 0.262798635  1.00000000
+79  0.0103451515 0.266211604  1.00000000
+80  0.0104897088 0.269624573  1.00000000
+81  0.0106583515 0.273037543  1.00000000
+82  0.0108158680 0.276450512  1.00000000
+83  0.0109506459 0.279863481  1.00000000
+84  0.0112241742 0.283276451  1.00000000
+85  0.0115708958 0.286689420  1.00000000
+86  0.0116555453 0.290102389  1.00000000
+87  0.0117221353 0.293515358  1.00000000
+88  0.0117949296 0.296928328  1.00000000
+89  0.0120118983 0.300341297  1.00000000
+90  0.0122269997 0.303754266  1.00000000
+91  0.0122490642 0.307167235  1.00000000
+92  0.0123452898 0.310580205  1.00000000
+93  0.0124487376 0.313993174  1.00000000
+94  0.0125676594 0.317406143  1.00000000
+95  0.0126816427 0.320819113  1.00000000
+96  0.0127648990 0.324232082  1.00000000
+97  0.0128405107 0.327645051  1.00000000
+98  0.0128652114 0.331058020  1.00000000
+99  0.0129531250 0.334470990  1.00000000
+100 0.0131843436 0.337883959  1.00000000
+101 0.0133719317 0.341296928  1.00000000
+102 0.0138777612 0.344709898  1.00000000
+103 0.0143921729 0.348122867  1.00000000
+104 0.0146249849 0.351535836  1.00000000
+105 0.0149247375 0.354948805  1.00000000
+106 0.0150299474 0.358361775  1.00000000
+107 0.0150826790 0.361774744  1.00000000
+108 0.0152203782 0.365187713  1.00000000
+109 0.0154672017 0.368600683  1.00000000
+110 0.0157632939 0.372013652  1.00000000
+111 0.0159223766 0.375426621  1.00000000
+112 0.0159601752 0.378839590  1.00000000
+113 0.0160623759 0.382252560  1.00000000
+114 0.0162282283 0.385665529  1.00000000
+115 0.0163739860 0.389078498  1.00000000
+116 0.0165746004 0.392491468  1.00000000
+117 0.0167490496 0.395904437  1.00000000
+118 0.0168151311 0.399317406  1.00000000
+119 0.0168847677 0.402730375  1.00000000
+120 0.0175721700 0.406143345  1.00000000
+121 0.0182824746 0.409556314  1.00000000
+122 0.0183780014 0.412969283  1.00000000
+123 0.0185971762 0.416382253  1.00000000
+124 0.0188221096 0.419795222  1.00000000
+125 0.0188878821 0.423208191  1.00000000
+126 0.0191211200 0.426621160  1.00000000
+127 0.0194252613 0.430034130  1.00000000
+128 0.0195835764 0.433447099  1.00000000
+129 0.0196587950 0.436860068  1.00000000
+130 0.0197081672 0.440273038  1.00000000
+131 0.0200899658 0.443686007  1.00000000
+132 0.0206886431 0.447098976  1.00000000
+133 0.0210954624 0.450511945  1.00000000
+134 0.0212636179 0.453924915  1.00000000
+135 0.0212926325 0.457337884  1.00000000
+136 0.0215328272 0.460750853  1.00000000
+137 0.0218038714 0.464163823  1.00000000
+138 0.0218691799 0.467576792  1.00000000
+139 0.0219907064 0.470989761  1.00000000
+140 0.0223678649 0.474402730  1.00000000
+141 0.0232066252 0.477815700  1.00000000
+142 0.0238796687 0.481228669  1.00000000
+143 0.0240172633 0.484641638  1.00000000
+144 0.0245152923 0.488054608  1.00000000
+145 0.0251229811 0.491467577  1.00000000
+146 0.0258548036 0.494880546  1.00000000
+147 0.0264468707 0.498293515  1.00000000
+148 0.0266487901 0.501706485  1.00000000
+149 0.0268837282 0.505119454  1.00000000
+150 0.0269341856 0.508532423  1.00000000
+151 0.0271089682 0.511945392  1.00000000
+152 0.0273865336 0.515358362  1.00000000
+153 0.0276530314 0.518771331  1.00000000
+154 0.0278656955 0.522184300  1.00000000
+155 0.0279414807 0.525597270  1.00000000
+156 0.0280191120 0.529010239  1.00000000
+157 0.0281395443 0.532423208  1.00000000
+158 0.0282875261 0.535836177  1.00000000
+159 0.0287270748 0.539249147  1.00000000
+160 0.0291389572 0.542662116  1.00000000
+161 0.0292308689 0.546075085  1.00000000
+162 0.0294233223 0.549488055  1.00000000
+163 0.0300290407 0.552901024  1.00000000
+164 0.0313328458 0.556313993  1.00000000
+165 0.0323218296 0.559726962  1.00000000
+166 0.0327305633 0.563139932  1.00000000
+167 0.0331080174 0.566552901  1.00000000
+168 0.0334256042 0.569965870  1.00000000
+169 0.0338138017 0.573378840  1.00000000
+170 0.0341395131 0.576791809  1.00000000
+171 0.0343546229 0.580204778  1.00000000
+172 0.0345629852 0.583617747  1.00000000
+173 0.0348096750 0.587030717  1.00000000
+174 0.0349971012 0.590443686  1.00000000
+175 0.0354756464 0.593856655  1.00000000
+176 0.0358856072 0.597269625  1.00000000
+177 0.0366234122 0.600682594  1.00000000
+178 0.0374393630 0.604095563  1.00000000
+179 0.0376851359 0.607508532  1.00000000
+180 0.0379553377 0.610921502  1.00000000
+181 0.0381984690 0.614334471  1.00000000
+182 0.0389437700 0.617747440  1.00000000
+183 0.0397730246 0.621160410  1.00000000
+184 0.0406483111 0.624573379  1.00000000
+185 0.0413452530 0.627986348  1.00000000
+186 0.0413832729 0.631399317  1.00000000
+187 0.0415042876 0.634812287  1.00000000
+188 0.0416584010 0.638225256  1.00000000
+189 0.0417180072 0.641638225  1.00000000
+190 0.0420106313 0.645051195  1.00000000
+191 0.0423767215 0.648464164  1.00000000
+192 0.0425278512 0.651877133  1.00000000
+193 0.0426076540 0.655290102  1.00000000
+194 0.0428431487 0.658703072  1.00000000
+195 0.0431878427 0.662116041  1.00000000
+196 0.0434920123 0.665529010  1.00000000
+197 0.0437171619 0.668941980  1.00000000
+198 0.0438856333 0.672354949  1.00000000
+199 0.0450006278 0.675767918  1.00000000
+200 0.0461649374 0.679180887  1.00000000
+201 0.0464032387 0.682593857  1.00000000
+202 0.0465058062 0.686006826  1.00000000
+203 0.0467244587 0.689419795  1.00000000
+204 0.0470500661 0.692832765  1.00000000
+205 0.0472107385 0.696245734  1.00000000
+206 0.0472617091 0.699658703  1.00000000
+207 0.0473795881 0.703071672  1.00000000
+208 0.0475374101 0.706484642  1.00000000
+209 0.0484606352 0.709897611  1.00000000
+210 0.0495483910 0.713310580  1.00000000
+211 0.0502798750 0.716723549  1.00000000
+212 0.0510688763 0.720136519  1.00000000
+213 0.0515272581 0.723549488  1.00000000
+214 0.0518994171 0.726962457  1.00000000
+215 0.0522849658 0.730375427  1.00000000
+216 0.0529844948 0.733788396  1.00000000
+217 0.0541506544 0.737201365  1.00000000
+218 0.0548226296 0.740614334  1.00000000
+219 0.0552058157 0.744027304  1.00000000
+220 0.0567008788 0.747440273  1.00000000
+221 0.0581817195 0.750853242  1.00000000
+222 0.0590969553 0.754266212  1.00000000
+223 0.0599570871 0.757679181  1.00000000
+224 0.0614665148 0.761092150  1.00000000
+225 0.0627827506 0.764505119  1.00000000
+226 0.0635523443 0.767918089  1.00000000
+227 0.0642524656 0.771331058  1.00000000
+228 0.0645667808 0.774744027  1.00000000
+229 0.0658652922 0.778156997  1.00000000
+230 0.0677118208 0.781569966  1.00000000
+231 0.0696655144 0.784982935  1.00000000
+232 0.0710952839 0.788395904  1.00000000
+233 0.0729985995 0.791808874  1.00000000
+234 0.0750099690 0.795221843  1.00000000
+235 0.0757225417 0.798634812  1.00000000
+236 0.0762056567 0.802047782  1.00000000
+237 0.0766968586 0.805460751  1.00000000
+238 0.0771017315 0.808873720  1.00000000
+239 0.0772588763 0.812286689  1.00000000
+240 0.0778305967 0.815699659  1.00000000
+241 0.0790097229 0.819112628  1.00000000
+242 0.0811106196 0.822525597  1.00000000
+243 0.0828522020 0.825938567  1.00000000
+244 0.0848919519 0.829351536  1.00000000
+245 0.0877273219 0.832764505  1.00000000
+246 0.0893953444 0.836177474  1.00000000
+247 0.0903524271 0.839590444  1.00000000
+248 0.0908099297 0.843003413  1.00000000
+249 0.0912423454 0.846416382  1.00000000
+250 0.0921489481 0.849829352  1.00000000
+251 0.0930288727 0.853242321  1.00000000
+252 0.0946016997 0.856655290  1.00000000
+253 0.0960483934 0.860068259  1.00000000
+254 0.0964820329 0.863481229  1.00000000
+255 0.0967499587 0.866894198  1.00000000
+256 0.0977917919 0.870307167  1.00000000
+257 0.0992775708 0.873720137  1.00000000
+258 0.1010760683 0.877133106  1.00000000
+259 0.1030490499 0.880546075  1.00000000
+260 0.1041358833 0.883959044  1.00000000
+261 0.1077290096 0.887372014  1.00000000
+262 0.1113411779 0.890784983  1.00000000
+263 0.1121808455 0.894197952  1.00000000
+264 0.1138571074 0.897610922  1.00000000
+265 0.1156032026 0.901023891  1.00000000
+266 0.1169279984 0.904436860  1.00000000
+267 0.1184590415 0.907849829  1.00000000
+268 0.1196043661 0.911262799  1.00000000
+269 0.1203245040 0.914675768  1.00000000
+270 0.1257039775 0.918088737  1.00000000
+271 0.1310684736 0.918088737  0.94117647
+272 0.1372121079 0.918088737  0.88235294
+273 0.1437239605 0.921501706  0.88235294
+274 0.1466880560 0.924914676  0.88235294
+275 0.1492152423 0.928327645  0.88235294
+276 0.1514891119 0.931740614  0.88235294
+277 0.1591500811 0.935153584  0.88235294
+278 0.1664999013 0.938566553  0.88235294
+279 0.1727031821 0.941979522  0.88235294
+280 0.1782322848 0.945392491  0.88235294
+281 0.1925728153 0.945392491  0.82352941
+282 0.2064074721 0.948805461  0.82352941
+283 0.2106630345 0.948805461  0.76470588
+284 0.2178457867 0.952218430  0.76470588
+285 0.2282689265 0.955631399  0.76470588
+286 0.2376899114 0.959044369  0.76470588
+287 0.2439635571 0.962457338  0.76470588
+288 0.2498423027 0.965870307  0.76470588
+289 0.2550272572 0.969283276  0.76470588
+290 0.2830412426 0.972696246  0.76470588
+291 0.3146338525 0.976109215  0.76470588
+292 0.3516988867 0.979522184  0.76470588
+293 0.3902397529 0.979522184  0.70588235
+294 0.4095690312 0.982935154  0.70588235
+295 0.4703748341 0.982935154  0.64705882
+296 0.5517853556 0.986348123  0.64705882
+297 0.5892658241 0.986348123  0.58823529
+298 0.6131355830 0.989761092  0.58823529
+299 0.6422728290 0.993174061  0.58823529
+300 0.6631268420 0.993174061  0.52941176
+301 0.6900644519 0.993174061  0.47058824
+302 0.7247032231 0.993174061  0.41176471
+303 0.7513271121 0.993174061  0.35294118
+304 0.7834575204 0.993174061  0.29411765
+305 0.8311039666 0.993174061  0.23529412
+306 0.8563312984 0.993174061  0.17647059
+307 0.8809983681 0.993174061  0.11764706
+308 0.9129268248 0.993174061  0.05882353
+309 0.9342082731 0.996587031  0.05882353
+310 0.9603724131 0.996587031  0.00000000</code></pre>
+<pre class="r"><code>#100% for Stage C
+#70% for Stage B
+#64.7% for Stage A
+#85.6% for stage 0
+
+#At 98% spec:
+#  0 is 100%, A is 76%, B is 83%, C is 100%.</code></pre>
+<pre class="r"><code>#screen&lt;-read_csv(here(&quot;data&quot;,&quot;two_test_plan&quot;,&quot;delfi-results_screen.csv&quot;)) #WE SUBMITTED QUOTING NUMBER FROM THE WRONG MODEL --- 10/9 VV say&#39;s we will fix later. Below is correct
+screen&lt;-read_csv(here(&quot;data&quot;,&quot;two_test_plan&quot;,&quot;delfi-tf-results_screen.csv&quot;)) </code></pre>
+<pre><code>New names:
+* `` -&gt; ...1</code></pre>
+<pre><code>Rows: 368 Columns: 11</code></pre>
+<pre><code>── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (6): id, type, BCLC, Disease, grp_id, cat
+dbl (5): ...1, score.delfi.lr, Draw_number, Treatment before blood draw, sco...</code></pre>
+<pre><code>
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>risk&lt;-read_csv(here(&quot;data&quot;,&quot;two_test_plan&quot;,&quot;delfi-results_risk.csv&quot;))</code></pre>
+<pre><code>New names:
+* `` -&gt; ...1</code></pre>
+<pre><code>Rows: 208 Columns: 11</code></pre>
+<pre><code>── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (6): id, type, BCLC, Disease, grp_id, cat
+dbl (5): ...1, score.delfi.lr, Draw_number, Treatment before blood draw, sco...</code></pre>
+<pre><code>
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>healthy&lt;-screen %&gt;% filter(Disease==&quot;Non-cancer&quot;)
+median(healthy$score.delfi.lr)</code></pre>
+<pre><code>[1] 0.02645003</code></pre>
+<pre class="r"><code>clinical&lt;-read_csv(here(&quot;data&quot;,&quot;Clinical_Metadata_spreadsheet_8_11.csv&quot;))</code></pre>
+<pre><code>New names:
+* ...2 -&gt; ...3
+* Personnel...23 -&gt; Personnel...27
+* Personnel...30 -&gt; Personnel...34</code></pre>
+<pre><code>Rows: 555 Columns: 70</code></pre>
+<pre><code>── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (43): id, ...3, DateTransferred, HCCStatus, Cirrhosisstatus, Disease, Co...
+dbl (27): score.delfi, forveryclean, Plas2avolu2e, Sex, Age, AFP, cfdnaextra...</code></pre>
+<pre><code>
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>delfi&lt;-read_csv(here(&quot;data&quot;,&quot;two_test_plan&quot;,&quot;delfi-results_risk.csv&quot;))</code></pre>
+<pre><code>New names:
+* `` -&gt; ...1</code></pre>
+<pre><code>Rows: 208 Columns: 11</code></pre>
+<pre><code>── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (6): id, type, BCLC, Disease, grp_id, cat
+dbl (5): ...1, score.delfi.lr, Draw_number, Treatment before blood draw, sco...</code></pre>
+<pre><code>
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>data&lt;-inner_join(delfi %&gt;% select(id,score.delfi.gbm),clinical %&gt;% select(-score.delfi),by=c(&quot;id&quot;=&quot;id&quot;))
+#write_csv(data,&quot;Clinical_DELFI.csv&quot;)
+data&lt;-data %&gt;% filter(forveryclean==1)
+data&lt;-data %&gt;% mutate(group=ifelse(Disease==&quot;HCC&quot;,data$BCLC,data$Disease))
+data&lt;-data %&gt;% mutate(group=if_else(Disease==&quot;HCV&quot;&amp;Cirrhosisstatus==&quot;yes&quot;,&quot;Cirrhosis&quot;,group))
+data&lt;-data %&gt;% mutate(group=if_else(Disease==&quot;HBV&quot;,&quot;Viral Hepatitis&quot;,group))
+data&lt;-data %&gt;% mutate(group=if_else(Disease==&quot;HCV&quot;&amp;Cirrhosisstatus==&quot;no&quot;,&quot;Viral Hepatitis&quot;,group))
+data&lt;-data %&gt;% mutate(group=if_else(Disease==&quot;HCV&quot;&amp;Cirrhosisstatus==&quot;No&quot;,&quot;Viral Hepatitis&quot;,group))
+
+data&lt;-data %&gt;% mutate(sex_cat=ifelse(Sex==1,&quot;Female&quot;,&quot;Male&quot;))
+HCC&lt;-data %&gt;% filter(Disease==&quot;HCC&quot;)
+HCC$group=&quot;All HCC&quot;
+data&lt;-rbind(data,HCC)
+data &lt;- data %&gt;% mutate(group=ifelse(group==&quot;0&quot;,&quot;0/A&quot;,data$group))
+data &lt;- data %&gt;% mutate(group=ifelse(group==&quot;A&quot;,&quot;0/A&quot;,data$group))
+
+data$group&lt;-factor(data$group,levels=c(&quot;Non-cancer&quot;,&quot;Viral Hepatitis&quot;,&quot;Cirrhosis&quot;,&quot;All HCC&quot;,&quot;0/A&quot;,&quot;B&quot;,&quot;C&quot;))
+
+
+hep&lt;-data %&gt;% filter(group==&quot;Viral Hepatitis&quot;)
+median(hep$score.delfi.gbm)</code></pre>
+<pre><code>[1] 0.0777092</code></pre>
+<pre class="r"><code>cir&lt;-data %&gt;% filter(group==&quot;Cirrhosis&quot;)
+median(cir$score.delfi.gbm)</code></pre>
+<pre><code>[1] 0.07990134</code></pre>
+<pre class="r"><code>data %&gt;% group_by(BCLC) %&gt;% summarize(m=median(score.delfi.gbm))</code></pre>
+<pre><code># A tibble: 5 × 2
+  BCLC       m
+  &lt;chr&gt;  &lt;dbl&gt;
+1 0     0.464 
+2 A     0.613 
+3 B     0.830 
+4 C     0.923 
+5 N     0.0787</code></pre>
+<pre class="r"><code>cancer&lt;-data %&gt;% filter(BCLC == &quot;0&quot;|BCLC==&quot;A&quot;)
+cancer&lt;-data %&gt;% filter(BCLC == &quot;B&quot;)
+cancer&lt;-data %&gt;% filter(BCLC == &quot;C&quot;)
+
+nc&lt;-data %&gt;% filter(Disease != &quot;HCC&quot;)
+wilcox.test(x=cancer$score.delfi.gbm,y=nc$score.delfi.gbm,alternative=&quot;two.sided&quot;)</code></pre>
+<pre><code>
+    Wilcoxon rank sum test with continuity correction
+
+data:  cancer$score.delfi.gbm and nc$score.delfi.gbm
+W = 5406, p-value &lt; 2.2e-16
+alternative hypothesis: true location shift is not equal to 0</code></pre>
+<pre class="r"><code>clinical&lt;-read_csv(here(&quot;data&quot;,&quot;Clinical_Metadata_spreadsheet_8_11.csv&quot;))</code></pre>
+<pre><code>New names:
+* ...2 -&gt; ...3
+* Personnel...23 -&gt; Personnel...27
+* Personnel...30 -&gt; Personnel...34</code></pre>
+<pre><code>Rows: 555 Columns: 70</code></pre>
+<pre><code>── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (43): id, ...3, DateTransferred, HCCStatus, Cirrhosisstatus, Disease, Co...
+dbl (27): score.delfi, forveryclean, Plas2avolu2e, Sex, Age, AFP, cfdnaextra...</code></pre>
+<pre><code>
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>delfi&lt;-read_csv(here(&quot;data&quot;,&quot;two_test_plan&quot;,&quot;delfi-results_risk.csv&quot;))</code></pre>
+<pre><code>New names:
+* `` -&gt; ...1</code></pre>
+<pre><code>Rows: 208 Columns: 11</code></pre>
+<pre><code>── Column specification ────────────────────────────────────────────────────────
+Delimiter: &quot;,&quot;
+chr (6): id, type, BCLC, Disease, grp_id, cat
+dbl (5): ...1, score.delfi.lr, Draw_number, Treatment before blood draw, sco...</code></pre>
+<pre><code>
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>data&lt;-inner_join(delfi %&gt;% select(id,score.delfi.gbm),clinical %&gt;% select(-score.delfi),by=c(&quot;id&quot;=&quot;id&quot;))
+#write_csv(data,&quot;Clinical_DELFI.csv&quot;)
+data&lt;-data %&gt;% filter(forveryclean==1)
+data&lt;-data %&gt;% mutate(group=ifelse(Disease==&quot;HCC&quot;,data$BCLC,data$Disease))
+data&lt;-data %&gt;% mutate(group=if_else(Disease==&quot;HCV&quot;&amp;Cirrhosisstatus==&quot;yes&quot;,&quot;Cirrhosis&quot;,group))
+data&lt;-data %&gt;% mutate(group=if_else(Disease==&quot;HBV&quot;,&quot;Viral Hepatitis&quot;,group))
+data&lt;-data %&gt;% mutate(group=if_else(Disease==&quot;HCV&quot;&amp;Cirrhosisstatus==&quot;no&quot;,&quot;Viral Hepatitis&quot;,group))
+data&lt;-data %&gt;% mutate(group=if_else(Disease==&quot;HCV&quot;&amp;Cirrhosisstatus==&quot;No&quot;,&quot;Viral Hepatitis&quot;,group))
+
+data&lt;-data %&gt;% mutate(sex_cat=ifelse(Sex==1,&quot;Female&quot;,&quot;Male&quot;))
+HCC&lt;-data %&gt;% filter(Disease==&quot;HCC&quot;)
+HCC$group=&quot;All HCC&quot;
+data&lt;-rbind(data,HCC)
+data &lt;- data %&gt;% mutate(group=ifelse(group==&quot;0&quot;,&quot;0/A&quot;,data$group))
+data &lt;- data %&gt;% mutate(group=ifelse(group==&quot;A&quot;,&quot;0/A&quot;,data$group))
+
+data$group&lt;-factor(data$group,levels=c(&quot;Non-cancer&quot;,&quot;Viral Hepatitis&quot;,&quot;Cirrhosis&quot;,&quot;All HCC&quot;,&quot;0/A&quot;,&quot;B&quot;,&quot;C&quot;))
+data$log_delfi&lt;-log10(data$score.delfi.gbm/(1-data$score.delfi.gbm))
+data&lt;-data %&gt;% mutate(log_delfi=ifelse(is.infinite(log_delfi),7.5,log_delfi))
+
+data$log_AFP&lt;-log10(data$AFP)
+library(ggpubr)
+test&lt;-data %&gt;% filter(group == &quot;All HCC&quot;)
+
+
+test %&gt;% filter(AFP &gt;= 20) %&gt;% filter(score.delfi.gbm&gt;=.26)</code></pre>
+<pre><code># A tibble: 34 × 71
+   id       score.delfi.gbm ...3            forveryclean Plas2avolu2e DateTransferred
+   &lt;chr&gt;              &lt;dbl&gt; &lt;chr&gt;                  &lt;dbl&gt;        &lt;dbl&gt; &lt;chr&gt;          
+ 1 CGLI15P            0.930 HCCAK362                   1          3.9 8/27/2021      
+ 2 CGLI201P           0.516 HCCAK223                   1          3   6/3/2022       
+ 3 CGLI203P           0.859 HCCAK232 Pre LT            1          3   6/3/2022       
+ 4 CGLI208P           0.657 HCCAK378                   1          3   6/3/2022       
+ 5 CGLI209P           0.613 HCCAK384                   1          3   6/3/2022       
+ 6 CGLI214P           0.506 HCCAK417                   1          3.6 6/3/2022       
+ 7 CGLI217P           0.517 HCCAK336 W0                1          3   6/8/2022       
+ 8 CGLI218P           0.959 HCCAK360 W0                1          2   6/8/2022       
+ 9 CGLI220P           0.892 HCCAK413 W0                1          3.6 6/8/2022       
+10 CGLI221P           0.729 HCCAK014                   1          2   6/8/2022       
+# … with 24 more rows, and 65 more variables: HCCStatus &lt;chr&gt;,
+#   Cirrhosisstatus &lt;chr&gt;, Disease &lt;chr&gt;, Cohort &lt;chr&gt;, Sex &lt;dbl&gt;, Age &lt;dbl&gt;,
+#   DateCollection &lt;chr&gt;, BCLC &lt;chr&gt;, Child-Pugh &lt;chr&gt;, CP_group &lt;chr&gt;,
+#   AFP &lt;dbl&gt;, HBV viral load &lt;chr&gt;, HBV load standardized &lt;chr&gt;, BMI &lt;chr&gt;,
+#   Diangosis &lt;chr&gt;, Race &lt;chr&gt;, Ethnicity &lt;chr&gt;, Race/Ethinicity &lt;chr&gt;,
+#   cfDNAExtractionDate &lt;chr&gt;, cfdnaextractionbatch &lt;dbl&gt;,
+#   Personnel...27 &lt;chr&gt;, cfDNAExtracted(ng/2l) &lt;dbl&gt;, …</code></pre>
+<pre class="r"><code>test %&gt;% filter(AFP &lt; 20) %&gt;% filter(score.delfi.gbm&gt;=.26)</code></pre>
+<pre><code># A tibble: 30 × 71
+   id       score.delfi.gbm ...3            forveryclean Plas2avolu2e DateTransferred
+   &lt;chr&gt;              &lt;dbl&gt; &lt;chr&gt;                  &lt;dbl&gt;        &lt;dbl&gt; &lt;chr&gt;          
+ 1 CGLI10P            0.957 HCCAK333 W0                1          3.6 8/27/2021      
+ 2 CGLI11P            0.936 HCCAK334                   1          3.7 8/27/2021      
+ 3 CGLI12P            0.950 HCCAK347                   1          3.8 8/27/2021      
+ 4 CGLI13P            0.901 HCCAK348                   1          3.8 8/27/2021      
+ 5 CGLI14P            0.840 HCCAK307_FU1               1          3.7 8/27/2021      
+ 6 CGLI17P            0.651 HCCAK366                   1          2.8 8/27/2021      
+ 7 CGLI18P            0.850 HCCAK372                   1          5.2 8/27/2021      
+ 8 CGLI1P             0.753 HCCAK172                   1          3   8/27/2021      
+ 9 CGLI202P           0.757 HCCAK227 Pre LT            1          2.7 6/3/2022       
+10 CGLI205P           0.779 HCCAK342                   1          3   6/3/2022       
+# … with 20 more rows, and 65 more variables: HCCStatus &lt;chr&gt;,
+#   Cirrhosisstatus &lt;chr&gt;, Disease &lt;chr&gt;, Cohort &lt;chr&gt;, Sex &lt;dbl&gt;, Age &lt;dbl&gt;,
+#   DateCollection &lt;chr&gt;, BCLC &lt;chr&gt;, Child-Pugh &lt;chr&gt;, CP_group &lt;chr&gt;,
+#   AFP &lt;dbl&gt;, HBV viral load &lt;chr&gt;, HBV load standardized &lt;chr&gt;, BMI &lt;chr&gt;,
+#   Diangosis &lt;chr&gt;, Race &lt;chr&gt;, Ethnicity &lt;chr&gt;, Race/Ethinicity &lt;chr&gt;,
+#   cfDNAExtractionDate &lt;chr&gt;, cfdnaextractionbatch &lt;dbl&gt;,
+#   Personnel...27 &lt;chr&gt;, cfDNAExtracted(ng/2l) &lt;dbl&gt;, …</code></pre>
+<pre class="r"><code>test %&gt;% filter(AFP &gt;= 20) %&gt;% group_by(BCLC) %&gt;% summarize(n())</code></pre>
+<pre><code># A tibble: 4 × 2
+  BCLC  `n()`
+  &lt;chr&gt; &lt;int&gt;
+1 0         3
+2 A         5
+3 B        17
+4 C        14</code></pre>
+<pre class="r"><code>test %&gt;% group_by(BCLC) %&gt;% summarize(n())</code></pre>
+<pre><code># A tibble: 4 × 2
+  BCLC  `n()`
+  &lt;chr&gt; &lt;int&gt;
+1 0         7
+2 A        17
+3 B        30
+4 C        21</code></pre>
+<pre class="r"><code>test %&gt;% filter(score.delfi.gbm&gt;=.26) %&gt;% group_by(BCLC) %&gt;% summarize(n())</code></pre>
+<pre><code># A tibble: 4 × 2
+  BCLC  `n()`
+  &lt;chr&gt; &lt;int&gt;
+1 0         6
+2 A        13
+3 B        25
+4 C        20</code></pre>
+<pre class="r"><code>afp&lt;-data %&gt;% filter(!is.na(AFP))
+
+afp %&gt;% filter(AFP&lt;20 &amp; score.delfi.gbm&lt;=.26) %&gt;% filter(Disease != &quot;HCC&quot;)</code></pre>
+<pre><code># A tibble: 26 × 71
+   id       score.delfi.gbm ...3      forveryclean Plas2avolu2e DateTransferred
+   &lt;chr&gt;              &lt;dbl&gt; &lt;chr&gt;            &lt;dbl&gt;        &lt;dbl&gt; &lt;chr&gt;          
+ 1 CGLI104P          0.0314 HMN709506            1          1   11/16/2021     
+ 2 CGLI109P          0.0463 HMN709511            1          1   11/16/2021     
+ 3 CGLI118P          0.156  AK106                1          1.2 2/2/2022       
+ 4 CGLI119P          0.0693 AK198                1          1   2/2/2022       
+ 5 CGLI121P          0.0436 AK203                1          1   2/2/2022       
+ 6 CGLI122P          0.0172 AK201                1          1   2/2/2022       
+ 7 CGLI125P          0.247  AK239                1          1   2/2/2022       
+ 8 CGLI126P          0.0254 AK240                1          1   2/2/2022       
+ 9 CGLI127P          0.0606 AK243                1          1   2/2/2022       
+10 CGLI128P          0.176  AK247                1          1   2/2/2022       
+# … with 16 more rows, and 65 more variables: HCCStatus &lt;chr&gt;,
+#   Cirrhosisstatus &lt;chr&gt;, Disease &lt;chr&gt;, Cohort &lt;chr&gt;, Sex &lt;dbl&gt;, Age &lt;dbl&gt;,
+#   DateCollection &lt;chr&gt;, BCLC &lt;chr&gt;, Child-Pugh &lt;chr&gt;, CP_group &lt;chr&gt;,
+#   AFP &lt;dbl&gt;, HBV viral load &lt;chr&gt;, HBV load standardized &lt;chr&gt;, BMI &lt;chr&gt;,
+#   Diangosis &lt;chr&gt;, Race &lt;chr&gt;, Ethnicity &lt;chr&gt;, Race/Ethinicity &lt;chr&gt;,
+#   cfDNAExtractionDate &lt;chr&gt;, cfdnaextractionbatch &lt;dbl&gt;,
+#   Personnel...27 &lt;chr&gt;, cfDNAExtracted(ng/2l) &lt;dbl&gt;, …</code></pre>
+<pre class="r"><code>afp %&gt;% filter(Disease != &quot;HCC&quot;)</code></pre>
+<pre><code># A tibble: 40 × 71
+   id       score.delfi.gbm ...3      forveryclean Plas2avolu2e DateTransferred
+   &lt;chr&gt;              &lt;dbl&gt; &lt;chr&gt;            &lt;dbl&gt;        &lt;dbl&gt; &lt;chr&gt;          
+ 1 CGLI104P          0.0314 HMN709506            1          1   11/16/2021     
+ 2 CGLI109P          0.0463 HMN709511            1          1   11/16/2021     
+ 3 CGLI117P          0.489  AK096                1          0.3 2/2/2022       
+ 4 CGLI118P          0.156  AK106                1          1.2 2/2/2022       
+ 5 CGLI119P          0.0693 AK198                1          1   2/2/2022       
+ 6 CGLI120P          0.325  AK200                1          1   2/2/2022       
+ 7 CGLI121P          0.0436 AK203                1          1   2/2/2022       
+ 8 CGLI122P          0.0172 AK201                1          1   2/2/2022       
+ 9 CGLI123P          0.342  AK204                1          1   2/2/2022       
+10 CGLI124P          0.431  AK215                1          1   2/2/2022       
+# … with 30 more rows, and 65 more variables: HCCStatus &lt;chr&gt;,
+#   Cirrhosisstatus &lt;chr&gt;, Disease &lt;chr&gt;, Cohort &lt;chr&gt;, Sex &lt;dbl&gt;, Age &lt;dbl&gt;,
+#   DateCollection &lt;chr&gt;, BCLC &lt;chr&gt;, Child-Pugh &lt;chr&gt;, CP_group &lt;chr&gt;,
+#   AFP &lt;dbl&gt;, HBV viral load &lt;chr&gt;, HBV load standardized &lt;chr&gt;, BMI &lt;chr&gt;,
+#   Diangosis &lt;chr&gt;, Race &lt;chr&gt;, Ethnicity &lt;chr&gt;, Race/Ethinicity &lt;chr&gt;,
+#   cfDNAExtractionDate &lt;chr&gt;, cfdnaextractionbatch &lt;dbl&gt;,
+#   Personnel...27 &lt;chr&gt;, cfDNAExtracted(ng/2l) &lt;dbl&gt;, …</code></pre>
+<pre class="r"><code>#at these thresholds 26/40 non-cancer with AFP are correct -- ie 65% spec?</code></pre>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.0.5 (2021-03-31)
+Platform: x86_64-apple-darwin17.0 (64-bit)
+Running under: macOS Big Sur 10.16
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] ggpubr_0.4.0    pROC_1.17.0.1   recipes_0.1.16  caret_6.0-88   
+ [5] lattice_0.20-44 here_1.0.1      devtools_2.4.2  usethis_2.0.1  
+ [9] readxl_1.3.1    forcats_0.5.1   stringr_1.4.0   purrr_0.3.4    
+[13] readr_2.0.1     tidyr_1.1.3     tibble_3.1.4    ggplot2_3.3.5  
+[17] tidyverse_1.3.1 dplyr_1.0.7     workflowr_1.6.2
+
+loaded via a namespace (and not attached):
+  [1] colorspace_2.0-2     ggsignif_0.6.2       rio_0.5.27          
+  [4] ellipsis_0.3.2       class_7.3-19         rprojroot_2.0.2     
+  [7] fs_1.5.0             rstudioapi_0.13      listenv_0.8.0       
+ [10] remotes_2.4.0        bit64_4.0.5          prodlim_2019.11.13  
+ [13] fansi_0.5.0          lubridate_1.7.10     xml2_1.3.2          
+ [16] codetools_0.2-18     splines_4.0.5        cachem_1.0.6        
+ [19] knitr_1.33           pkgload_1.2.1        jsonlite_1.7.2      
+ [22] broom_0.7.9          dbplyr_2.1.1         compiler_4.0.5      
+ [25] httr_1.4.2           backports_1.2.1      assertthat_0.2.1    
+ [28] Matrix_1.3-4         fastmap_1.1.0        cli_3.0.1           
+ [31] later_1.3.0          htmltools_0.5.2      prettyunits_1.1.1   
+ [34] tools_4.0.5          gtable_0.3.0         glue_1.4.2          
+ [37] reshape2_1.4.4       Rcpp_1.0.7           carData_3.0-4       
+ [40] cellranger_1.1.0     jquerylib_0.1.4      vctrs_0.3.8         
+ [43] nlme_3.1-152         iterators_1.0.13     timeDate_3043.102   
+ [46] xfun_0.25            gower_0.2.2          globals_0.14.0      
+ [49] ps_1.6.0             openxlsx_4.2.4       testthat_3.0.4      
+ [52] rvest_1.0.1          lifecycle_1.0.0      rstatix_0.7.0       
+ [55] future_1.22.1        MASS_7.3-54          scales_1.1.1        
+ [58] ipred_0.9-11         vroom_1.5.4          hms_1.1.0           
+ [61] promises_1.2.0.1     parallel_4.0.5       curl_4.3.2          
+ [64] yaml_2.2.1           memoise_2.0.0        sass_0.4.0          
+ [67] rpart_4.1-15         stringi_1.7.4        desc_1.3.0          
+ [70] foreach_1.5.1        zip_2.2.0            pkgbuild_1.2.0      
+ [73] lava_1.6.10          rlang_0.4.11         pkgconfig_2.0.3     
+ [76] evaluate_0.14        bit_4.0.4            processx_3.5.2      
+ [79] tidyselect_1.1.1     parallelly_1.27.0    plyr_1.8.6          
+ [82] magrittr_2.0.1       R6_2.5.1             generics_0.1.0      
+ [85] DBI_1.1.1            foreign_0.8-81       pillar_1.6.2        
+ [88] haven_2.4.3          withr_2.4.2          abind_1.4-5         
+ [91] survival_3.2-13      nnet_7.3-16          future.apply_1.8.1  
+ [94] car_3.0-11           modelr_0.1.8         crayon_1.4.1        
+ [97] utf8_1.2.2           tzdb_0.1.2           rmarkdown_2.10      
+[100] grid_4.0.5           data.table_1.14.0    callr_3.7.0         
+[103] git2r_0.28.0         ModelMetrics_1.2.2.2 reprex_2.0.1        
+[106] digest_0.6.27        httpuv_1.6.2         stats4_4.0.5        
+[109] munsell_0.5.0        bslib_0.3.0          sessioninfo_1.1.1   </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

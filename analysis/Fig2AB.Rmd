@@ -1,0 +1,129 @@
+---
+title: "2AB"
+output: html_document
+date: "2022-09-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r load}
+library(tidyverse)
+library(caTools)
+library(ggpubr)
+library(tidyverse)
+library(dplyr)
+library(cowplot)
+library(here)
+
+plotdf_low <- readRDS(here("data","low_mean"))
+plotdf_high <- readRDS(here("data","high_mean"))
+```
+A function to make one facet of a plot with the means
+
+```{r,fig.height= 7, fig.width=10,dev=c("png", "pdf")}
+
+mean_plot_bottom<-function(df,TF2,lim) {
+  test<-df %>% filter(TF==TF2)
+  pl2 <- 	test %>%
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  #filter(TF %in% tfmhilist[1:9])%>%
+  ggplot(aes(x = pos, y = Mean, color = grp1)) +  
+  geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=1,Other=1), guide="none") +
+  geom_ribbon(aes(ymin=(Mean-Std), ymax=(Mean+Std),color=grp1,fill=grp1), linetype=0, alpha=0.1) + #linetype 2 is the dashed one victor didn't like, linetype 1 with alpha is an option. linetype = "dotted" is also possible. Don't need to change alpha
+  cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-lim,lim)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "blue", "Non-cancer" = "grey")) + theme_pubr() + scale_fill_manual(values = c(HCC = "blue", "Non-cancer" = "grey")) + 
+       theme(legend.title = element_blank()) +
+         facet_wrap(vars(TF), scales = "free_y")
+pl2
+}
+
+mean_plot_top<-function(df,TF2,lim) {
+   test<-df %>% filter(TF==TF2)
+pl2 <- 	test %>%
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  #filter(TF %in% tfmhilist[1:9])%>%
+  ggplot(aes(x = pos, y = Mean, color = grp1)) +  
+  geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=1,Other=1), guide="none") +
+  geom_ribbon(aes(ymin=(Mean-Std), ymax=(Mean+Std),color=grp1,fill=grp1), linetype=0, alpha=0.1) + #linetype2 without any alpha is the dashed one victor didn't like, linetype 1 with alpha is an option. linetype = "dotted" is also possible
+  cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-lim,lim)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "red", "Non-cancer" = "grey")) + theme_pubr() + scale_fill_manual(values = c(HCC = "red", "Non-cancer" = "grey")) + 
+       theme(legend.title = element_blank()) +
+         facet_wrap(vars(TF), scales = "free_y")
+pl2
+}
+
+```
+
+Make the bottom TF version, by mean (both -1000,1000 and -500,500)
+
+```{r,fig.height= 7, fig.width=10,dev=c("png", "pdf")}
+
+TF_low<-unique(plotdf_low$TF)
+lim<-500
+p0<-mean_plot_bottom(plotdf_low,TF_low[7],lim)
+p2<-mean_plot_bottom(plotdf_low,TF_low[13],lim)+theme(legend.position="none")
+p3<-mean_plot_bottom(plotdf_low,TF_low[16],lim)+theme(legend.position="none")
+p4<-mean_plot_bottom(plotdf_low,TF_low[15],lim)+theme(legend.position="none")
+p5<-mean_plot_bottom(plotdf_low,TF_low[5],lim)+theme(legend.position="none")
+p6<-mean_plot_bottom(plotdf_low,TF_low[12],lim)+theme(legend.position="none")
+p7<-mean_plot_bottom(plotdf_low,TF_low[14],lim)+theme(legend.position="none")
+p8<-mean_plot_bottom(plotdf_low,TF_low[18],lim)+theme(legend.position="none")
+p9<-mean_plot_bottom(plotdf_low,TF_low[3],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "../output/tf_low_means_500_light.pdf", width = 10,height = 7)
+pg
+
+
+```
+
+Make the Top TF version, by mean (both -1000,1000 and -500,500)
+
+```{r,fig.height= 7, fig.width=10,dev=c("png", "pdf")}
+TF_high<-unique(plotdf_high$TF)
+lim<-500
+p0<-mean_plot_top(plotdf_high,TF_high[13],lim)
+p2<-mean_plot_top(plotdf_high,TF_high[12],lim)+theme(legend.position="none")
+p3<-mean_plot_top(plotdf_high,TF_high[7],lim)+theme(legend.position="none")
+p4<-mean_plot_top(plotdf_high,TF_high[8],lim)+theme(legend.position="none")
+p5<-mean_plot_top(plotdf_high,TF_high[5],lim)+theme(legend.position="none")
+p6<-mean_plot_top(plotdf_high,TF_high[2],lim)+theme(legend.position="none")
+p7<-mean_plot_top(plotdf_high,TF_high[10],lim)+theme(legend.position="none")
+p8<-mean_plot_top(plotdf_high,TF_high[3],lim)+theme(legend.position="none")
+p9<-mean_plot_top(plotdf_high,TF_high[9],lim)+theme(legend.position="none")
+legend <- get_legend(
+  # create some space to the left of the legend
+  p0 + theme(legend.box.margin = margin(0, 0, 0, 0))
+)
+p1<-p0+theme(legend.position="none")
+
+cp<-plot_grid(p1,p2,p3,p4,p5,p6,p7,p8,p9,nrow=3)
+pg<-plot_grid(legend,cp, ncol=1,rel_widths = c(.4,3),rel_heights = c(.4,3))
+#ggsave(pg,filename = "../output/tf_high_means_500_light.pdf", width = 10,height = 7)
+pg
+
+```

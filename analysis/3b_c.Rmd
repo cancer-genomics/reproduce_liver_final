@@ -1,0 +1,367 @@
+---
+title: "Fig 4"
+site: workflowr::wflow_site
+output:
+  workflowr::wflow_html:
+    toc: false
+editor_options:
+  chunk_output_type: console
+---
+
+
+```{r packages, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(data.table)
+library(RColorBrewer)
+library(grid)
+library(gridExtra)
+library(here)
+library(ggstance)
+devtools::load_all(here("code","liver.tools"))
+```
+Read in Noushin's data for TCGA figure
+
+```{r data}
+fig.data <- readRDS(here('data', 'TCGA', 'fig2c_p2_data.rds'))
+```
+
+## TCGA copy number
+
+TCGA figure panel -- problems, chromosome widths, making the panel match size of one facet in z-score panel
+
+```{r plot, fig.height= 23, fig.width=8,dev=c("png", "pdf")}
+setDT(fig.data)
+fig.data[,bin:=as.factor(rev(bin))][]
+fig.data$disease<-"TCGA Liver Cancers\n(n = 372)"
+plot <- fig.data %>%
+    mutate(disease="TCGA Liver Cancers\n(n = 372)") %>%
+    ggplot(aes(x=value, y=bin, color=change, fill=change)) +
+    facet_grid(arm~disease, scales = 'free_y') + ##,
+    ##           switch = 'y')+#, space = 'free')+
+    ##facet_wrap(~arm, ncol=1, scales="free_y") + ##
+    geom_col() +
+    scale_x_continuous() +
+    scale_fill_brewer(palette = 'Set1')+
+    scale_color_brewer(palette = 'Set1')+
+    theme_minimal(base_size=24) +
+    theme(strip.text.y = element_text(angle = 0,
+                                      hjust = 0.5,
+                                      vjust = 0.5,
+                                      size=20),
+          strip.text.x=element_text(size=20),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          panel.grid =  element_blank(),
+          legend.title = element_blank(),
+          legend.position="bottom") +
+    xlab("Proportion of\ncases with CNV") +
+    ylab("Chromosome Arm")
+```
+
+## Liver study z-scores
+
+The z-score's with our data panel. Problems -- chromosome width.
+
+```{r z_scores}
+features <- read_csv(here("data","delfi_features.csv"),
+                     show_col_types=FALSE)
+meta <- read_csv(here("data", "Clinical_Metadata_spreadsheet_8_11.csv"),
+                 show_col_types=FALSE)
+meta$grp_id<-sapply(strsplit(meta$id,"P"),"[",1)
+
+d_c<-meta %>% filter(forveryclean==1 & Disease == "Non-cancer")
+d_c$cat<-"Danish Cocos"
+cirr<-meta %>% filter(forveryclean==1 & Disease == "Cirrhosis")
+cirr$cat<-"Cirrhosis"
+hbv<-meta %>% filter(forveryclean==1 & Disease == "HBV")
+hbv$cat<-"HBV"
+hcv<-meta %>% filter(forveryclean==1 & Disease == "HCV")
+hcv$cat<-"HCV"
+hcc<-meta %>% filter(forveryclean==1 & Disease == "HCC")
+hcc$cat<-"HCC"
+d1<-rbind(hcc,cirr,hbv,d_c,hcv)
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV"|Disease=="HBV" & Cirrhosisstatus=="no","Viral Hepatitis",cat))
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV" & Cirrhosisstatus=="yes","Cirrhosis",cat))
+d1<- d1 %>% mutate(cat=if_else(Disease=="Non-cancer","Non-cancer",cat))
+meta<-d1
+meta$Disease<-meta$cat
+meta<-meta %>% mutate(`HCC Status`=if_else(`HCCStatus`=="Yes","Yes","No"))
+
+
+cols <- brewer.pal(7,"Set1")
+cols[3] <- cols[4]
+features2 <- zscore_features(features, meta) %>%
+    select(id, hcc_status, Disease, Arm,
+           z, root2, root3, y, colors, transp)
+###YOU ARE HERE AFTER LUNCH!!!
+ns <- features2 %>%
+    group_by(hcc_status) %>%
+    summarize(n=length(unique(id))) %>%
+    mutate(label=paste0(hcc_status, "\n(n = ", n, ")"))
+ns <- setNames(ns$label, ns$hcc_status)
+
+zplot_cancer <- features2 %>%
+    ggplot(aes(x=y, y=z, color=colors, alpha=transp)) +
+    geom_point(size=5) +
+    facet_grid(Arm ~ hcc_status, scales = 'free_y',labeller=labeller(hcc_status=ns)) +
+    coord_flip() +
+    theme_minimal(base_size=24) +
+    theme(strip.text.y.left = element_text(angle = 0,
+                                           hjust = 0.5,
+                                           vjust = 0.5),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+
+          panel.grid =  element_blank(),
+          plot.title = element_blank(),
+          legend.title = element_blank(),
+          axis.title.y=element_blank(),
+          legend.position = "bottom",
+          strip.text.y = element_blank()) +
+    scale_y_continuous(limits = c(-150,150)) +
+    scale_alpha_identity() +
+    scale_fill_manual(values = cols) +
+    scale_color_manual(values = cols) +
+    ylab("Z-Score")
+```
+
+Adding together the TCGA and z-score panel -- problems -- chromosome width, size of TCGA panel, not yet stacked with feature importance panel.
+
+```{r cowplot, eval=FALSE}
+#pdf("test.pdf")
+cowplot::plot_grid(plot,zplot_cancer,nrow=1,align="v",axis="l")
+#dev.off() #
+```
+
+## Feature importance
+
+Feature importance panel
+```{r heatmap}
+
+results<-readRDS(here("output","feature_importance_TF.Rmd",
+                     "loadings_TF_screening.rds"))
+pd <- results[["pd"]]
+sc <- results[["sc"]]
+#---------------- now make plots -----------------###
+                                        # visualize feature by PC heatmap ##
+pc.labels <- c("PC1\n", "PC2\n", "PC3\n") %>%
+    setNames(1:3)
+heatmap <- pd %>%
+    ggplot(aes(x = pc.id, y = bin.id)) +
+    facet_grid(arm ~ pc.id, scales = 'free',
+               switch = 'y', space = 'free',
+               labeller=labeller(pc.id=pc.labels))+
+    geom_tile(aes(fill = value)) +
+    scale_fill_distiller(palette = 'RdBu') +
+    scale_y_continuous(trans = 'reverse') +
+    theme_minimal(base_size=24) +
+    labs(x = 'Principal components\nof fragmentation profiles', y = '', fill = 'Value') +
+    theme(axis.text.x=element_text(color="white"),
+          strip.text.y=element_blank(),
+          strip.text.x=element_text(size=26),
+          axis.text.y = element_text(color="white"),
+          axis.title.y=element_text(color="white"),
+          axis.ticks = element_blank(),
+          panel.grid =  element_blank(),
+          legend.position = 'none') +
+    ylab("Something")
+```
+
+```{r top_annotation}
+ta <- top_annotation(sc)
+
+### NEW STUFF
+#results2<-readRDS(here("output","feature_importance_TF.Rmd",
+                     #"loadings_TF.rds"))
+#sc2 <- results2[["sc"]]
+#sc2<-sc2 %>% filter(features %in% c("PC 1","PC 2", "PC 3")) 
+
+#ta$model<-"DELFI"
+#ta$pc.id<-factor(ta$pc.id,levels=c(2,3,1,2.1,3.1,1.1))
+#t<-tibble(pc.id=c(2,3,1),abs.value=sc2$abs.value,sign.value=sc2$sign.value,x=c(1,1,1),model=c("DELFI+TF","DELFI+TF","DELFI+TF"),arm=c(1,1,1))
+#ta<-as_tibble(rbind(ta,t))
+
+cols <- c('#0571b0', '#ca0020', '#999999')
+names(cols) <- c('-1', '1', NA)
+top.annot <- ta %>%
+    ggplot(aes(x = pc.id, y = abs.value, colour = sign.value)) +
+    facet_grid(arm ~ pc.id, scales = 'free',
+                   switch = 'y', space = 'free') +
+    geom_point(size = 5) +
+    geom_segment(aes(x = pc.id,
+                     xend = pc.id,
+                     y = abs.value, yend = 0),
+                 size=2) +
+    theme_minimal(base_size=24) +
+    ylab("Log odds ratio") +
+    xlab("") +
+    theme(axis.text.x=element_text(color="white"),
+          strip.text.y=element_blank(),
+          axis.line.x=element_line(color="gray"),
+          axis.ticks.x=element_line(color="gray"),
+          axis.ticks = element_blank(),
+          panel.grid =  element_blank(),
+          legend.position = 'none') +
+##    theme(panel.grid=element_blank(),
+##          strip.text.y = element_blank(),
+
+##          strip.text.x = element_blank(),
+##          axis.text.x = element_blank(),
+##          axis.ticks = element_blank(),
+##          panel.border = element_rect(color = "white",
+##                                      fill = NA, size = 0.2),
+##          legend.position = 'none') +
+    scale_color_manual(values = cols, na.value = '#999999')
+```
+
+```{r side_annotation}
+bins5mb <- read_csv(here("data","long_bins.csv"),
+                    show_col_types=FALSE)
+sa <- side_annotation(pd, sc, bins5mb)
+
+
+#sa2 <- results2[["sc"]]
+#sa2<-sa2 %>% filter(! features %in% c("PC 1","PC 2", "PC 3","TF_pc_1")) 
+#pd2 <- results2[["pd"]]
+#sa_temp <- side_annotation(pd2, sc2, bins5mb)$arm.imp
+#x <- strsplit(as.character(sa2$features), " " )
+
+#sa2$arm<-sapply( x, "[", 2 )
+#sa2<-left_join(sa_temp %>% select(-abs.value),sa2 %>% select(arm,abs.value,scaled_coefs),by="arm")
+#sa2 <- sa2 %>% mutate(abs.value=if_else(is.na(abs.value),0,abs.value))
+#sa2<-sa2 %>% mutate(sign.value=sign(scaled_coefs))
+#sa2 <- sa2 %>% select(-scaled_coefs)
+
+bl <- sa[["bl"]]
+arm.imp <- sa[["arm.imp"]]
+#arm.imp$model<-"DELFI"
+#sa2$model<-"DELFI+TF"
+#arm.imp<-rbind(arm.imp,sa2)
+right.annot <- bl %>%
+    ggplot(aes(x = x, y = bin.id)) +
+    geom_point(color = 'white') +
+    facet_grid(arm ~ pc.id,
+               scales = 'free',
+               switch = 'y', space = 'free') +
+    theme_minimal(base_size=24) +
+    geom_point(data = arm.imp,
+               aes(x = abs.value,
+                   y = bin.id, color = sign.value),
+               size=5) +
+    geom_segment(data = arm.imp,
+                 aes(x = abs.value, xend = 0,
+                     y = bin.id, yend = bin.id,
+                     color = sign.value),
+                 size=2) +
+    scale_color_manual(values = cols, na.value = '#999999') +
+    scale_y_continuous(breaks = c(0,2,4,6)) +
+    labs(x = 'Log odds\nratio', y = '', color = '') +
+    theme(strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          panel.border = element_blank(),
+          panel.grid=element_blank(),
+          legend.position = 'none')
+
+
+
+```
+
+```{r tf_annotation}
+sa <- tf_annotation(pd, sc, bins5mb)
+sa<-sa[["arm.imp"]]
+sa<-sa %>%arrange(abs.value)
+sa$arm<-factor(sa$arm,levels=sa$arm)
+tf_annotation<-ggplot(sa,aes(x=arm,y=abs.value,color=sign.value))+geom_point(size=5)+geom_segment(data=sa,aes(x=arm,xend=arm,y=abs.value,yend=0,color=sign.value),size=2)+ scale_color_manual(values = cols, na.value = '#999999') +theme_minimal(base_size=24)+ labs(y = 'Log odds\nratio', x = 'TFBS', color = '') +
+    theme(strip.text.x = element_blank(),
+          strip.text.y = element_blank(),
+          axis.text.y = element_text(size=30),
+          axis.ticks = element_blank(),
+          panel.border = element_blank(),
+          panel.grid=element_blank(),
+          legend.position = 'none')+coord_flip() 
+
+```
+
+
+
+
+## Fig 4
+
+Assembling the 3 pieces of the feature importance figure into one panel
+
+```{r heights, fig.height=23, fig.width=10, dev=c("png", "pdf")}
+hmap <- ggplotGrob(heatmap)
+z.coef <- ggplotGrob(right.annot)
+pc.coef <- ggplotGrob(top.annot)
+h <- hmap$heights
+## I think these widths correspond to the panels
+ix <- seq(from=8, by=2, length.out=39)
+## make logical
+is_arm <- seq_along(h) %in% ix
+h2 <- h[is_arm]
+size <- map_dbl(h2, function(x) unlist(x)[[1]])
+## The widths less than 100 might be too small
+is2small <- size < 12
+h2[is2small] <- unit(12, "null")
+h[is_arm] <- h2
+z.coef$heights = h
+hmap$heights <- h
+hmap$widths <- pc.coef$widths
+#saveRDS(h, file="../data/arm_heights.rds")
+```
+
+```{r eval=FALSE}
+##pc.coef$widths = hmap$widths
+tf<-ggplotGrob(tf_annotation)
+tf$widths<-z.coef$widths
+gl <- list(pc.coef,
+           hmap,
+           z.coef,
+           tf)
+#gl <- list(pc.coef,
+#           hmap,
+#           z.coef,
+#           nullGrob())
+
+m <- rbind(c(1, 4),
+           c(2, 3))
+grid.arrange(grobs=gl,
+             layout_matrix=m,
+             heights=c(1, 7),
+             widths=c(4, 1),
+             padding=unit(0, "lines"))
+```
+
+```{r fig4, fig.height=25, fig.width=28, dev=c("png", "pdf")}
+tf<-ggplotGrob(tf_annotation)
+#tf$widths<-z.coef$widths
+#tf$heights<-z.coef$heights
+tcga.legend <- cowplot::get_legend(plot)
+p2 <- plot +
+    guides(fill="none", color="none") +
+    ylab("")
+g1 <- ggplotGrob(p2)
+g1$heights <- h
+
+zscore.legend <- cowplot::get_legend(zplot_cancer)
+p3 <- zplot_cancer +
+    guides(color="none", fill="none")
+g2 <- ggplotGrob(p3)
+g2$heights <- h
+gl <- list(g1,
+           g2,
+           pc.coef,
+           hmap,
+           z.coef,
+           nullGrob(),tf)
+m <- rbind(c(6, 6, 3, 6,6),
+           c(1, 2, 4, 5,7))
+grid.arrange(grobs=gl,
+             layout_matrix=m,
+             heights=c(1, 7),
+             widths=c(2.7, 4, 4, 2.7,2.3),
+             padding=unit(0, "lines")) ##
+```
+

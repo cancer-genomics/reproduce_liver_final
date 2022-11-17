@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Predictive distributions of performance in future studies</title>
+
+<script src="site_libs/header-attrs-2.10/header-attrs.js"></script>
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/master/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">foda2022</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Predictive distributions of performance in
+future studies</h1>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2022-11-17
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 1
+</p>
+<p>
+<strong>Knit directory:</strong> <code>foda2022/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version
+1.6.2). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges">
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted
+changes </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguncommittedchanges"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The R Markdown is untracked by Git. To know which version of the R
+Markdown file created these results, you’ll want to first commit it to
+the Git repo. If you’re still working on the analysis, you can ignore
+this warning. When you’re finished, you can run
+<code>wflow_publish</code> to commit the R Markdown file and build the
+HTML.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20221117code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20221117)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20221117code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20221117)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr
+project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrong94de5f7">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong> 94de5f7
+</a>
+</p>
+</div>
+<div id="strongRepositoryversionstrong94de5f7"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version 94de5f7.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    code/.DS_Store
+    Ignored:    code/.Rhistory
+    Ignored:    data/.DS_Store
+    Ignored:    output/.DS_Store
+
+Untracked files:
+    Untracked:  LICENSE
+    Untracked:  analysis/1a.Rmd
+    Untracked:  analysis/1bc.Rmd
+    Untracked:  analysis/3a.Rmd
+    Untracked:  analysis/3b_c.Rmd
+    Untracked:  analysis/4a.Rmd
+    Untracked:  analysis/4b_c.Rmd
+    Untracked:  analysis/4d.Rmd
+    Untracked:  analysis/Clinical_Supplement.Rmd
+    Untracked:  analysis/Fig2AB.Rmd
+    Untracked:  analysis/Fig2C.Rmd
+    Untracked:  analysis/Fig2DE.Rmd
+    Untracked:  analysis/Rob_AFP.Rmd
+    Untracked:  analysis/S1.Rmd
+    Untracked:  analysis/S10_11.Rmd
+    Untracked:  analysis/S6.Rmd
+    Untracked:  analysis/Text_Numbers_Submitted.Rmd
+    Untracked:  analysis/figS12.Rmd
+    Untracked:  code/Model_Lo_Val.Rmd
+    Untracked:  code/TF.rmd
+    Untracked:  code/feature_importance.Rmd
+    Untracked:  code/feature_importanceTF.Rmd
+    Untracked:  code/gsearesuball.Rmd
+    Untracked:  code/gsearesubatrisk.Rmd
+    Untracked:  code/hilistallcohort.txt
+    Untracked:  code/liver.tools/
+    Untracked:  code/plot-roc.r
+    Untracked:  code/prepare_tcga_plot_data.r
+    Untracked:  code/sumcomb.Rmd
+    Untracked:  code/supplementalgsearesub.Rmd
+    Untracked:  code/tfbs_coverage-v1-01val.R
+    Untracked:  code/tfbsmakerhigh.sh
+    Untracked:  code/tfbsmakerlowwo.sh
+    Untracked:  code/tfhilistall.txt
+    Untracked:  code/tfhilistatrisk.txt
+    Untracked:  code/tflowlistall.txt
+    Untracked:  code/tflowlistatrisk.txt
+    Untracked:  data/Alltissuetyperesuball.rds
+    Untracked:  data/Alltissuetyperesubatrisk.rds
+    Untracked:  data/Clinical_Metadata_spreadsheet_8_11.csv
+    Untracked:  data/Clinical_Metadata_spreadsheet_8_11.xlsx
+    Untracked:  data/LUCAS_metadata.xlsx
+    Untracked:  data/TCGA/
+    Untracked:  data/TF_names_ref.csv
+    Untracked:  data/arm_heights.rds
+    Untracked:  data/cohort_rel_cov2.txt
+    Untracked:  data/delfi_features.csv
+    Untracked:  data/high_mean
+    Untracked:  data/lengthnameTF.rds
+    Untracked:  data/liverlengthandorderall.rds
+    Untracked:  data/liverlengthandorderatrisk.rds
+    Untracked:  data/long_bins.csv
+    Untracked:  data/long_bins_val.csv
+    Untracked:  data/low_mean
+    Untracked:  data/lunglengthandorder.rds
+    Untracked:  data/lungn
+    Untracked:  data/processed.rds
+    Untracked:  data/sample_annotation_heatmap.csv
+    Untracked:  data/simulation.xls
+    Untracked:  data/simulation_new_aa.xls
+    Untracked:  data/two_test_plan/
+    Untracked:  data/val_preds.csv
+    Untracked:  data/validation_features.csv
+    Untracked:  data/validation_meta.csv
+    Untracked:  data/validation_rel_cov.txt
+    Untracked:  output/feature_importance.Rmd/
+    Untracked:  output/feature_importance_TF.Rmd/
+    Untracked:  output/word_docs/
+
+Unstaged changes:
+    Modified:   README.md
+    Modified:   analysis/about.Rmd
+    Modified:   analysis/index.Rmd
+    Modified:   analysis/license.Rmd
+    Modified:   code/README.md
+    Modified:   data/README.md
+    Modified:   output/README.md
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+There are no past versions. Publish this analysis with
+<code>wflow_publish()</code> to start tracking its development.
+</p>
+<hr>
+</div>
+</div>
+</div>
+<div id="goals" class="section level1">
+<h1>Goals</h1>
+<p>In a future study of 100,000 participants, what is our predictive
+distribution for the following: - number individuals screened - liver
+cancers detected by delfi - liver cancers detected by ultrasound (US) +
+alpha fetal protein (AFP) - false positives leading to unnecessary
+follow-up procedures by these approaches - individuals with liver cancer
+not identified ( false negatives )</p>
+<p>The size of the screening study is determined by the number of
+samples collected in a finite period of time. Studies with lower
+adherence to surveillance guidelines have fewer participants.</p>
+</div>
+<div id="best-guesses" class="section level1">
+<h1>Best guesses</h1>
+<div id="performance-of-surveillance-tools" class="section level2">
+<h2>Performance of surveillance tools</h2>
+<pre class="r"><code>find_params &lt;- function(i, dat){
+    dat &lt;- dat[i, ]
+    params &lt;- epi.betabuster(mode=dat$mode,
+                             conf=0.975,
+                             greaterthan=TRUE,
+                             x=dat$lower,
+                             max.shape1=500,
+                             conf.level=0.95)
+    dat$shape1 &lt;- params$shape1
+    dat$shape2 &lt;- params$shape2
+    dat
+}
+params &lt;- seq_len(nrow(tools)) %&gt;%
+    map_dfr(find_params, dat=tools)</code></pre>
+<pre class="r"><code>simulate_performance &lt;- function(i, params, N=1000){
+    p &lt;- params[i, ]
+    x &lt;- rbeta(N, shape1=p$shape1, shape2=p$shape2)
+    x
+}
+simvalues &lt;- seq_len(nrow(tools)) %&gt;%
+    map(simulate_performance, params=params)
+params$simulation &lt;- simvalues
+params2 &lt;- params %&gt;%
+    filter(metric != &quot;adherence&quot;) %&gt;%
+    pivot_wider(id_cols=c(&quot;tool&quot;, &quot;population&quot;),
+                names_from=&quot;metric&quot;,
+                values_from=&quot;simulation&quot;) %&gt;%
+    unnest(c(&quot;sensitivity&quot;, &quot;specificity&quot;))
+adhere &lt;- params %&gt;%
+    filter(metric==&quot;adherence&quot;) %&gt;%
+    unnest(simulation) %&gt;%
+    select(tool, population, simulation) %&gt;%
+    set_colnames(c(&quot;tool&quot;, &quot;population&quot;, &quot;adherence&quot;)) %&gt;%
+    nest(adherence=adherence)
+params3 &lt;- params2 %&gt;%
+    nest(performance=c(sensitivity, specificity))
+params4 &lt;- left_join(params3, adhere,
+                     by=c(&quot;tool&quot;, &quot;population&quot;))
+panelA.data &lt;- params2 %&gt;%
+    mutate(population=factor(population,
+                             rev(c(&quot;High risk&quot;, &quot;Early stage&quot;))))</code></pre>
+<pre class="r"><code>panelA.data&lt;-panelA.data %&gt;% filter(tool %in% c(&quot;DELFI&quot;, &quot;US + AFP&quot;)) 
+panelA.data$tool&lt;-factor(panelA.data$tool,levels=c(&quot;US + AFP&quot;,&quot;DELFI&quot;))
+
+panelA &lt;- panelA.data %&gt;%
+    ggplot(aes(specificity, sensitivity)) +
+    geom_point(aes(color=tool), size=0.5) +
+    theme_classic(base_size=25) +
+    theme(panel.grid=element_blank()) +
+    geom_density2d(aes(color=tool), size=1.5) +
+    scale_y_continuous(expand=c(0, 0), limits=c(0.15, 1)) +
+    scale_x_continuous(expand=c(0, 0), limits=c(0.15, 1)) +
+    ##xlim(c(0.15, 1)) +
+    ##ylim(c(0.15, 1)) +
+    ##facet_wrap(~population, ncol=1) +
+    theme(strip.background=element_blank(),
+          legend.position=c(0.2, 0.25)) +
+    guides(color=guide_legend(title=&quot;&quot;,
+                              override.aes=list(size=1.5))) +
+    xlab(&quot;Specificity&quot;) +
+    ylab(&quot;Sensitivity&quot;)
+panelA</code></pre>
+<p><img src="figure/Rob_AFP.Rmd/panelA-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>panelA &lt;- ggplotGrob(panelA)</code></pre>
+</div>
+<div id="prevalence-of-hcc-cirrhosis-hep-b" class="section level2">
+<h2>Prevalence of HCC, cirrhosis, Hep B</h2>
+<p>Prevalence is probably fairly precise depending on population</p>
+<pre class="r"><code>prev.wide &lt;- rdirichlet(1000, cohorts$prevalence*1000) %&gt;%
+    as_tibble() %&gt;%
+    set_colnames(cohorts$disease)</code></pre>
+<pre><code>Warning: The `x` argument of `as_tibble.matrix()` must have unique column names if `.name_repair` is omitted as of tibble 2.0.0.
+Using compatibility `.name_repair`.</code></pre>
+<pre class="r"><code>prev.long &lt;- prev.wide %&gt;%
+    pivot_longer(cols=all_of(cohorts$disease), names_to=&quot;Disease&quot;,
+                 values_to=&quot;Prevalence&quot;)
+prev.long %&gt;%
+    ggplot(aes(Prevalence)) +
+    geom_density(color=&quot;gray&quot;, fill=&quot;gray&quot;) +
+    theme_bw(base_size=15) +
+    facet_wrap(~Disease, scales=&quot;free_y&quot;) +
+    theme(panel.grid=element_blank()) +
+    xlim(c(0, 1))</code></pre>
+<p><img src="figure/Rob_AFP.Rmd/prevalence-1.png" width="960" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>prev3 &lt;- tibble(prevalence=prev.wide[[&quot;Cirrhosis, HCC&quot;]] +
+                    prev.wide[[&quot;Hepatitis B, HCC&quot;]] +
+                    prev.wide[[&quot;Cirrhosis, Hepatitis B, HCC&quot;]])
+params4$prevalence &lt;- rep(prev3, 6)</code></pre>
+</div>
+<div id="simulations" class="section level2">
+<h2>Simulations</h2>
+<ol style="list-style-type: decimal">
+<li><p>sample 100,000 people from high risk population
+(multinomial)</p></li>
+<li><p>subsample based on adherence</p></li>
+<li><p>calculate performance statistics for delfi and US+AFP</p></li>
+<li><p>repeat 1-3 1000 times</p></li>
+</ol>
+<pre class="r"><code>perf &lt;- function(i, object, N=100e3){
+    dat &lt;- unnest(object[i, ], c(&quot;performance&quot;,
+                                 &quot;adherence&quot;,
+                                 &quot;prevalence&quot;))
+    L &lt;- nrow(dat)
+    set.seed(149491) ## use same random number seed to capture differences in parameters
+    screened &lt;- rbinom(L, size=N, prob=dat$adherence)
+    ## prevalence
+    P &lt;- rbinom(L, size=screened, prob=dat$prevalence) ## P = FN + TP
+    N &lt;- screened - P  ## N = TN + FP
+    TP &lt;- rbinom(L, size=P, prob=dat$sensitivity)
+    FP &lt;- rbinom(L, size=N, prob=(1-dat$specificity))
+    TN &lt;- N - FP  ## N = FP + TN
+    FN &lt;- P - TP
+    fpr &lt;- FP/N
+    fnr &lt;- FN/P
+    tnr &lt;- TN/N
+    tpr &lt;- TP/P ## sensitivity
+    acc &lt;- (TP+TN)/(P+N)
+    err &lt;- (FP+FN)/(P+N)
+    ppv &lt;- TP/(TP+FP)
+    npv &lt;- TN/(TN+FN)
+    stats &lt;- tibble(&quot;P&quot;=P, &quot;N&quot;=N, &quot;TP&quot;=TP, &quot;FP&quot;=FP, &quot;TN&quot;=TN,
+                    &quot;FN&quot;=FN, &quot;acc&quot;=acc, &quot;err&quot;=err,
+                    &quot;fpr&quot;=fpr, &quot;fnr&quot;=fnr, &quot;tnr&quot;=tnr,
+                    &quot;tpr&quot;=tpr, &quot;ppv&quot;=ppv, &quot;npv&quot;=npv,
+                    &quot;number_screened&quot;=screened)
+    stats2 &lt;- bind_cols(dat, stats)
+    stats2
+}</code></pre>
+<pre class="r"><code>## for now, we only care about HCC versus not HCC
+params5 &lt;- seq_len(nrow(params4)) %&gt;%
+    map_dfr(perf, params4) %&gt;%
+    filter(tool %in% c(&quot;DELFI&quot;, &quot;US + AFP&quot;))
+montecarlo &lt;- params5</code></pre>
+<pre class="r"><code>##colors &lt;- c(&quot;steelblue&quot;, &quot;gray&quot;)
+npvfig &lt;-
+    params5 %&gt;%
+    ggplot(aes(tool, npv)) +
+    geom_boxplot(aes(fill=tool),
+                 alpha=0.3, width=0.3,
+                 outlier.shape=NA) +
+    theme_classic(base_size=24) +
+    theme(panel.grid=element_blank()) +
+    ylab(&quot;Negative predictive value\n&quot;) +
+    xlab(&quot;&quot;) +
+    ylim(c(0.9, 1)) +
+    guides(fill=&quot;none&quot;)
+npvfig2 &lt;- ggplotGrob(npvfig)
+
+tpfig &lt;- params5 %&gt;%
+    ggplot(aes(tool, TP)) +
+    geom_boxplot(aes(fill=tool),  alpha=0.3,
+                 width=0.3,
+                 outlier.shape=NA) +
+    ##scale_y_log10(limits=c(10, 1200)) +
+    theme_classic(base_size=24) +
+    theme(panel.grid=element_blank(),
+          legend.position=c(0.2, 0.8)) +
+    guides(fill=&quot;none&quot;) +
+    ylab(&quot;Number liver cancers detected\n&quot;) + xlab(&quot;&quot;)
+tpfig2 &lt;- ggplotGrob(tpfig)
+tpfig2$widths &lt;- npvfig2$widths
+
+fnrfig &lt;- params5 %&gt;%
+    ggplot(aes(tool, fnr)) +
+    geom_boxplot(aes(fill=tool),  alpha=0.3,
+                 width=0.3,
+                 outlier.shape=NA) +
+    ##scale_y_log10(limits=c(10, 1200)) +
+    theme_classic(base_size=24) +
+    theme(panel.grid=element_blank(),
+          legend.position=c(0.2, 0.8)) +
+    guides(fill=&quot;none&quot;) +
+    ylab(&quot;False Negative Rate\n&quot;) + xlab(&quot;&quot;)
+fnrfig2 &lt;- ggplotGrob(fnrfig)
+fnrfig2$widths &lt;- npvfig2$widths</code></pre>
+<pre class="r"><code>params.backup &lt;- params5
+panelA.data.backup &lt;- panelA.data
+params5 &lt;- filter(params5, population==&quot;Early stage&quot;)
+panelA.data &lt;- filter(panelA.data, population==&quot;Early stage&quot;)
+##colors &lt;- c(&quot;steelblue&quot;, &quot;gray&quot;)
+npvfig &lt;-
+    params5 %&gt;%
+    ggplot(aes(tool, npv)) +
+    geom_boxplot(aes(fill=tool),
+                 alpha=0.3, width=0.3,
+                 outlier.shape=NA) +
+    theme_classic(base_size=24) +
+    theme(panel.grid=element_blank()) +
+    ylab(&quot;Negative predictive value\n&quot;) +
+    xlab(&quot;&quot;) +
+    ylim(c(0.9, 1)) +
+    guides(fill=&quot;none&quot;)
+npvfig2 &lt;- ggplotGrob(npvfig)
+
+tpfig &lt;- params5 %&gt;%
+    ggplot(aes(tool, TP)) +
+    geom_boxplot(aes(fill=tool),  alpha=0.3,
+                 width=0.3,
+                 outlier.shape=NA) +
+    ##scale_y_log10(limits=c(10, 1200)) +
+    theme_classic(base_size=24) +
+    theme(panel.grid=element_blank(),
+          legend.position=c(0.2, 0.8)) +
+    guides(fill=&quot;none&quot;) +
+    ylab(&quot;Number liver cancers detected\n&quot;) + xlab(&quot;&quot;)
+tpfig2 &lt;- ggplotGrob(tpfig)
+tpfig2$widths &lt;- npvfig2$widths
+
+fnrfig &lt;- params5 %&gt;%
+    ggplot(aes(tool, fnr)) +
+    geom_boxplot(aes(fill=tool),  alpha=0.3,
+                 width=0.3,
+                 outlier.shape=NA) +
+    ##scale_y_log10(limits=c(10, 1200)) +
+    theme_classic(base_size=24) +
+    theme(panel.grid=element_blank(),
+          legend.position=c(0.2, 0.8)) +
+    guides(fill=&quot;none&quot;) +
+    ylab(&quot;False Negative Rate\n&quot;) + xlab(&quot;&quot;)
+fnrfig2 &lt;- ggplotGrob(fnrfig)
+fnrfig2$widths &lt;- npvfig2$widths
+
+panelA.data&lt;-panelA.data %&gt;% filter(tool %in% c(&quot;DELFI&quot;, &quot;US + AFP&quot;)) 
+panelA.data$tool&lt;-factor(panelA.data$tool,levels=c(&quot;US + AFP&quot;,&quot;DELFI&quot;))
+
+panelA &lt;- panelA.data %&gt;%
+    ggplot(aes(specificity, sensitivity)) +
+    geom_point(aes(color=tool), size=0.5) +
+    theme_classic(base_size=25) +
+    theme(panel.grid=element_blank()) +
+    geom_density2d(aes(color=tool), size=1.5) +
+    scale_y_continuous(expand=c(0, 0), limits=c(0.15, 1)) +
+    scale_x_continuous(expand=c(0, 0), limits=c(0.15, 1)) +
+    ##xlim(c(0.15, 1)) +
+    ##ylim(c(0.15, 1)) +
+    ##facet_wrap(~population, ncol=1) +
+    theme(strip.background=element_blank(),
+          legend.position=c(0.2, 0.25)) +
+    guides(color=guide_legend(title=&quot;&quot;,
+                              override.aes=list(size=1.5))) +
+    xlab(&quot;Specificity&quot;) +
+    ylab(&quot;Sensitivity&quot;)
+panelA</code></pre>
+<p><img src="figure/Rob_AFP.Rmd/backup-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>panelA &lt;- ggplotGrob(panelA)</code></pre>
+<pre class="r"><code>widths &lt;- c(0.45, 0.3, 0.3,.3) %&gt;%
+    &quot;/&quot;(sum(.))
+gl &lt;- grid.layout(1, 4, widths=unit(widths, &quot;npc&quot;),
+                  just=c(&quot;left&quot;, &quot;bottom&quot;))
+grid.newpage()
+pushViewport(viewport(layout=gl))
+pushViewport(viewport(layout.pos.row=1, layout.pos.col=1))
+##pushViewport(viewport(height=unit(0.5, &quot;npc&quot;)))
+grid.draw(panelA)
+popViewport()
+pushViewport(viewport(layout.pos.row=1, layout.pos.col=2))
+grid.draw(tpfig2)
+popViewport()
+pushViewport(viewport(layout.pos.row=1, layout.pos.col=3))
+grid.draw(npvfig2)
+popViewport()
+pushViewport(viewport(layout.pos.row=1, layout.pos.col=4))
+grid.draw(fnrfig2)</code></pre>
+<p><img src="figure/Rob_AFP.Rmd/earlystage-1.png" width="2400" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>mc &lt;- filter(montecarlo, population==&quot;Early stage&quot;,
+             tool %in% c(&quot;DELFI&quot;, &quot;US + AFP&quot;))
+nscreened &lt;-  mc %&gt;%
+    group_by(tool) %&gt;%
+    summarize(mu=mean(number_screened),
+              `0.025`=quantile(number_screened, prob=0.025),
+              `0.975`=quantile(number_screened, prob=0.975)) %&gt;%
+    mutate_at(2:4, round, 0) %&gt;%
+    mutate_at(2:4, prettyNum, big.mark=&quot;,&quot;) %&gt;%
+    set_colnames(c(&quot;tool&quot;, &quot;mu&quot;, &quot;q2.5&quot;, &quot;q97.5&quot;)) %&gt;%
+    unite(&quot;ci&quot;, c(&quot;q2.5&quot;, &quot;q97.5&quot;), sep=&quot;-&quot;)
+ndetect &lt;- mc %&gt;%
+    group_by(tool) %&gt;%
+    summarize(mu=mean(TP),
+              `0.025`=quantile(TP, prob=0.025),
+              `0.975`=quantile(TP, prob=0.975)) %&gt;%
+    mutate_at(2:4, round, 0) %&gt;%
+    mutate_at(2:4, prettyNum, big.mark=&quot;,&quot;) %&gt;%
+    set_colnames(c(&quot;tool&quot;, &quot;mu&quot;, &quot;q2.5&quot;, &quot;q97.5&quot;)) %&gt;%
+    unite(&quot;ci&quot;, c(&quot;q2.5&quot;, &quot;q97.5&quot;), sep=&quot;-&quot;)
+tmp &lt;- mc %&gt;%
+    group_by(tool) %&gt;%
+    select(tool, TP) %&gt;%
+    nest()
+addl &lt;- tibble(TP.delfi=tmp$data[[1]]$TP, TP.usafp=tmp$data[[2]]$TP) %&gt;%
+    mutate(diff=TP.delfi-TP.usafp,
+           fold=TP.delfi/TP.usafp) %&gt;%
+    summarize(mu=mean(diff),
+              mu.fold=mean(fold),
+              q2.5=quantile(fold, prob=0.025),
+              q97.5=quantile(fold, prob=0.975)) %&gt;%
+    mutate_at(1, round, 0) %&gt;%
+    mutate_at(2:4, round, 2) %&gt;%
+    mutate_at(1, prettyNum, big.mark=&quot;,&quot;) %&gt;%
+    unite(&quot;ci&quot;, c(&quot;q2.5&quot;, &quot;q97.5&quot;), sep=&quot;-&quot;)
+tmp &lt;- mc %&gt;%
+    group_by(tool) %&gt;%
+    select(tool, npv) %&gt;%
+    nest()
+npv &lt;- mc %&gt;%
+    group_by(tool) %&gt;%
+    summarize(mu=mean(npv),
+              `0.025`=quantile(npv, prob=0.025),
+              `0.975`=quantile(npv, prob=0.975)) %&gt;%
+    mutate_at(2:4, round, 3) %&gt;%
+    mutate_at(2:4, scales::percent) %&gt;%
+    set_colnames(c(&quot;tool&quot;, &quot;mu&quot;, &quot;q2.5&quot;, &quot;q97.5&quot;)) %&gt;%
+    unite(&quot;ci&quot;, c(&quot;q2.5&quot;, &quot;q97.5&quot;), sep=&quot;-&quot;)
+
+fnr &lt;- mc %&gt;%
+    group_by(tool) %&gt;%
+    summarize(mu=mean(fnr),
+              `0.025`=quantile(fnr, prob=0.025),
+              `0.975`=quantile(fnr, prob=0.975)) %&gt;%
+    mutate_at(2:4, round, 3) %&gt;%
+    mutate_at(2:4, scales::percent) %&gt;%
+    set_colnames(c(&quot;tool&quot;, &quot;mu&quot;, &quot;q2.5&quot;, &quot;q97.5&quot;)) %&gt;%
+    unite(&quot;ci&quot;, c(&quot;q2.5&quot;, &quot;q97.5&quot;), sep=&quot;-&quot;)</code></pre>
+<pre class="r"><code>params &lt;- round(cohorts$prevalence*1000, 1)
+prev &lt;- paste(params, collapse=&quot;, &quot;)</code></pre>
+</div>
+</div>
+<div id="text-for-results" class="section level1">
+<h1>text for Results</h1>
+<p>To evaluate how our approach would perform for surveillance and
+detection in patients at high-risk for liver cancer, we evaluated the
+DELFI model in a theoretical population of 100,000 high-risk individuals
+using Monte Carlo simulations. Given the importance of detection of
+early-stage cancers, we focused our modeling on the detection of stage
+0/A disease. We compared the DELFI approach to the current standard of
+care, concurrent ultrasound and AFP, and modeled the uncertainty of
+sensitivity and specificity of these surveillance modalities in this
+theoretical population through probability distributions centered at
+empirical estimates from our cohort or from previous reports (Singal et
+al., 2012, see Methods). Despite surveillance recommendations adherence
+in the US is low, with the most generous estimates suggesting 39% (46),
+resulting in an average of 40,042 individuals tested (95% CI,
+21,320-61,890). As blood tests offer high accessibility and compliance,
+with adherence rates of 80–90% reported for blood-based
+biomarkers(47,48), we conservatively assumed an average of 75% (95% CI,
+60-90%) of this population would be tested using the DELFI approach.
+Similarly, as the prevalence of cirrhosis, hepatitis B, and the
+co-occurrence of these co-morbidities with HCC could vary by geographic
+region due to differences in the ancestral composition, environmental
+exposures, and socioeconomic factors, we used a prior probability
+distribution to reflect our uncertainty of the composition of these
+diseases and possible regional differences. Monte Carlo simulations from
+these probability distributions (Methods) revealed that ultrasound and
+AFP detected an average of 2,233 individuals (95% CI, 1,088-3,699) with
+liver cancer (Supplemental Figure 14). Using DELFI, we would detect on
+average 2,794 additional liver cancer cases, or a 2.46-fold increase
+(95% CI, 1.25-4.57 fold increase) compared to ultrasound AFP alone
+(Supplemental Figure 14). The DELFI approach would not only
+substantially improve detection of liver cancer, but would be expected
+to increase the negative predictive value of the test (NPV) from 95.7%
+for ultrasound and AFP (95% CI, 93.8%-97.3%) to 97.1% for DELFI (95% CI,
+94.8%-99.0%). These analyses suggest a significant population-wide
+benefit for using a high-specificity blood-based early detection test as
+a tool for the detection of liver cancer.</p>
+<p>FNR stuff 38% (95% CI, 25%-51.5%) US + AFP 24% (95% CI, 9%-42.6%)
+DELFI</p>
+</div>
+<div id="text-for-methods" class="section level1">
+<h1>text for Methods</h1>
+<p>Monte Carlo simulations were used to compare the DELFI approach to
+ultrasound and AFP in a theoretical surveillance population. We used
+estimated 95% confidence intervals of sensitivity and specificity for
+DELFI and published 95% confidence intervals for US and AFP @ ref. The R
+package <code>epiR</code> was used to derive prior predictive
+probability distributions (beta distributions) from these confidence
+intervals (Carstensen B, Plummer M, Laara E, Hills M (2022). Epi: A
+Package for Statistical Analysis in Epidemiology. R package version
+2.47, <a href="https://CRAN.R-project.org/package=Epi"
+class="uri">https://CRAN.R-project.org/package=Epi</a>). @ author et al
+(year) reported that adherence to US and AFP surveillance was 61% (95%
+CI: 42%-79%). As other noninvasive blood-based tests have a reported
+adherence of more than 75% (@ ref), we assumed that adherence to DELFI
+would be 60% or greater with probability 0.975 or higher. Using these
+confidence estimates, epiR was used to derive beta prior predictive
+distributions for adherence. We simulated multinomial probabilities for
+prevalence of hepatitis B, cirrhosis, hepatitis B + HCC, cirrhosis +
+HCC, and hepatitis B + cirrhosis + HCC from a Dirichlet with parameters
+230, 680, 60, 23, 7, respectively. For a single Monte Carlo simulation
+for US and AFP testing, we<br />
+(i) sampled the probability of adherence (<span
+class="math inline">\(\eta\)</span>) from the prior predictive
+distribution,<br />
+(ii) simulated the number of 100,000 individuals (<span
+class="math inline">\(S\)</span>) who participated in surveillance
+(<span class="math inline">\(S \sim \text{Binomial}(\eta,
+100,000)\)</span>),<br />
+(iii) sampled probabilities of co-morbidities (Dirichlet(230, 680, 60,
+23, 7)),<br />
+(iv) computed the prevalence of HCC (<span
+class="math inline">\(\theta\)</span>),<br />
+(v) simulated HCC cases <span class="math inline">\((P \sim
+\text{Binomial}(\theta, S))\)</span> and computed the number of
+individuals without cancer (<span class="math inline">\(N = S -
+P\)</span>),<br />
+(vi) sampled the sensitivity (<span class="math inline">\(se\)</span>)
+and specificity (<span class="math inline">\(sp\)</span>) from the
+corresponding prior predictive distributions, and<br />
+(vii) sampled the true positives (<span class="math inline">\(TP \sim
+\text{Binomial}(P, se))\)</span> and false positives (<span
+class="math inline">\(FP \sim \text{Binomial}(N, 1-sp)\)</span>).<br />
+Given TP and FP, we calculated the NPV as (true negatives)/(true
+negatives + false negatives), where true negatives = <span
+class="math inline">\(N - FP\)</span> and false negatives = <span
+class="math inline">\(P - TP\)</span>. We repeated the above simulation
+1000 times, obtaining a distribution of TP, FP and NPV. Using parameters
+for sensitivity, specificity, and adherence for the DELFI approach, we
+repeated the same Monte Carlo analysis to allow comparisons between
+these two surveillance methodologies.</p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.0.5 (2021-03-31)
+Platform: x86_64-apple-darwin17.0 (64-bit)
+Running under: macOS Big Sur 10.16
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] grid      stats     graphics  grDevices utils     datasets  methods  
+[8] base     
+
+other attached packages:
+ [1] readxl_1.3.1           epiR_2.0.52            survival_3.2-13       
+ [4] magrittr_2.0.1         mvtnorm_1.1-2          forcats_0.5.1         
+ [7] stringr_1.4.0          dplyr_1.0.7            purrr_0.3.4           
+[10] readr_2.0.1            tidyr_1.1.3            tibble_3.1.4          
+[13] ggplot2_3.3.5          tidyverse_1.3.1        gtools_3.9.2          
+[16] gridExtra_2.3          liver.tools_0.0.0.9000 here_1.0.1            
+[19] workflowr_1.6.2       
+
+loaded via a namespace (and not attached):
+ [1] colorspace_2.0-2   ellipsis_0.3.2     class_7.3-19       rprojroot_2.0.2   
+ [5] flextable_0.8.2    base64enc_0.1-3    fs_1.5.0           rstudioapi_0.13   
+ [9] proxy_0.4-26       farver_2.1.0       remotes_2.4.0      fansi_0.5.0       
+[13] lubridate_1.7.10   xml2_1.3.2         splines_4.0.5      cachem_1.0.6      
+[17] knitr_1.33         pkgload_1.2.1      jsonlite_1.7.2     broom_0.7.9       
+[21] dbplyr_2.1.1       compiler_4.0.5     httr_1.4.2         backports_1.2.1   
+[25] assertthat_0.2.1   Matrix_1.3-4       fastmap_1.1.0      cli_3.0.1         
+[29] later_1.3.0        htmltools_0.5.2    prettyunits_1.1.1  tools_4.0.5       
+[33] gtable_0.3.0       glue_1.4.2         Rcpp_1.0.7         cellranger_1.1.0  
+[37] jquerylib_0.1.4    vctrs_0.3.8        xfun_0.25          ps_1.6.0          
+[41] testthat_3.0.4     rvest_1.0.1        lifecycle_1.0.0    devtools_2.4.2    
+[45] MASS_7.3-54        zoo_1.8-9          scales_1.1.1       hms_1.1.0         
+[49] promises_1.2.0.1   yaml_2.2.1         memoise_2.0.0      pander_0.6.5      
+[53] gdtools_0.2.3      sass_0.4.0         stringi_1.7.4      highr_0.9         
+[57] desc_1.3.0         e1071_1.7-8        zip_2.2.0          pkgbuild_1.2.0    
+[61] rlang_0.4.11       pkgconfig_2.0.3    systemfonts_1.0.2  evaluate_0.14     
+[65] lattice_0.20-44    sf_1.0-7           labeling_0.4.2     processx_3.5.2    
+[69] tidyselect_1.1.1   R6_2.5.1           generics_0.1.0     DBI_1.1.1         
+[73] pillar_1.6.2       haven_2.4.3        withr_2.4.2        units_0.8-0       
+[77] modelr_0.1.8       crayon_1.4.1       uuid_0.1-4         KernSmooth_2.23-20
+[81] utf8_1.2.2         tzdb_0.1.2         rmarkdown_2.10     officer_0.4.4     
+[85] usethis_2.0.1      isoband_0.2.5      data.table_1.14.0  callr_3.7.0       
+[89] git2r_0.28.0       reprex_2.0.1       digest_0.6.27      classInt_0.4-3    
+[93] httpuv_1.6.2       munsell_0.5.0      BiasedUrn_1.07     bslib_0.3.0       
+[97] sessioninfo_1.1.1 </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

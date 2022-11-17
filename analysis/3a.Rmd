@@ -1,0 +1,216 @@
+---
+title: "Visualizing Feature Distributions in a Heatmap"
+site: workflowr::wflow_site
+output: html_document
+chunk_output_type: console
+---
+
+
+```{r packages, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(openxlsx)
+library(devtools)
+library(ComplexHeatmap)
+library(circlize)
+library(data.table)
+library(here)
+#load_all(here("code", "rlucas"))
+#data(prediction_lucas, package="rlucas")
+#data(metadata, package="rlucas")
+
+# library(caret)
+# library(recipes)
+# library(pROC)
+
+
+#---------------------------choice of parameters----------------------------#
+# which model results to use for annotation
+# selected_model = 'full_lasso_2'
+selected_model = 'seq'
+
+# read in data from the first submission training set
+data_iteration = 1
+
+# whether or not include coverage features
+include_cov = FALSE
+```
+
+```{r sample.set.annotation, echo=FALSE}
+library(readxl)
+meta <- read_csv(here("data", "Clinical_Metadata_spreadsheet_8_11.csv"))
+meta$grp_id<-sapply(strsplit(meta$id,"P"),"[",1)
+
+d_c<-meta %>% filter(forveryclean==1 & Disease == "Non-cancer")
+d_c$cat<-"Danish Cocos"
+cirr<-meta %>% filter(forveryclean==1 & Disease == "Cirrhosis")
+cirr$cat<-"Cirrhosis"
+hbv<-meta %>% filter(forveryclean==1 & Disease == "HBV")
+hbv$cat<-"HBV"
+hcv<-meta %>% filter(forveryclean==1 & Disease == "HCV")
+hcv$cat<-"HCV"
+hcc<-meta %>% filter(forveryclean==1 & Disease == "HCC")
+hcc$cat<-"HCC"
+d1<-rbind(hcc,cirr,hbv,d_c,hcv)
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV"|Disease=="HBV" & Cirrhosisstatus=="no","Viral Hepatitis",cat))
+d1<- d1 %>% mutate(cat=if_else(Disease=="HCV" & Cirrhosisstatus=="yes","Cirrhosis",cat))
+d1<- d1 %>% mutate(cat=if_else(Disease=="Non-cancer","Non-cancer",cat))
+d1<-d1 %>% mutate(`HCC Status`=if_else(`HCCStatus`=="Yes","Yes","No"))
+
+dm.meta<-d1
+```
+
+```{r heatmap.body, echo=FALSE,dev=c("png", "pdf")}
+
+#--------------------------------construct the feature table-------------------------------#
+#--------------------------------------- Heatmap Body  ------------------------------------#
+features <- read_csv(here("data","delfi_features.csv"))
+library(data.table)
+f2<-fread(here("data","cohort_rel_cov2.txt"))
+ref<-read_csv(here("data","TF_names_ref.csv"))
+ref<-ref %>% filter(liv != "other")
+#liver_TFs<-read_csv("../data/Liver_COSMIC.csv")
+#liver_TFs$perc<-liver_TFs$`Mutated samples`/liver_TFs$`Samples tested`
+#TF_sel<-liver_TFs %>% filter(perc > .1)
+#TF_sel$name<-sapply(str_split(TF_sel$`Gene name`,"_"),"[",1)
+#TF_sel<-ref %>% filter(TF %in% TF_sel$name)
+f2<-f2 %>% select(id,ref$stat)
+colnames(f2) <- paste("TFBS", colnames(f2), sep = "_")
+
+features<-inner_join(features,f2,by=c("id"="TFBS_id"))
+#multinucs <- bins5mb %>% group_by(id) %>% summarize(multinucratio = sum(multinucs)/(sum(short+long)))
+#features <- inner_join(multinucs, features, by="id")
+dm.meta$Disease<-dm.meta$cat
+labels <- dm.meta %>%
+          select(id, `HCC Status`,Disease,BCLC,Age,Cohort)
+
+features <- inner_join(features,labels, by=c("id"="id"))
+
+features <- features %>% mutate(clinical_Disease_Status=factor(Disease,
+                                                              c("Non-cancer", "Viral Hepatitis", "Cirrhosis","HCC")),
+                                clinical_Age=as.integer(Age),clinical_BCLC=factor(BCLC,c("N","0","A","B","C")))
+
+if (include_cov == TRUE){
+  dna_features <- features %>% select(starts_with('zscore_') | starts_with('ratio_') | starts_with('cov_'))
+}else{
+  dna_features <- features %>% select(starts_with('zscore_') | starts_with('ratio_') | starts_with("TFBS_"))
+}
+
+dna_features<-dna_features[,order(colnames(dna_features))]
+dna_features <- as.matrix(dna_features)
+dna_features <- apply(dna_features, 2, scale)
+rownames(dna_features) <- features$id
+```
+
+```{r sample.annotation, echo=FALSE}
+#--------------------------------construct annotation object -------------------------------#
+
+# load in the stored model prediction values
+#if (data_iteration == 1){
+  #training_score_path <- here("code","rlucas","data", "prediction_lucas.rda")
+ # heldout_score_path <- here("data", "lucas-holdout-preds.csv")
+#}
+
+#model_cols <- list('full_lasso_2' = 'score.full2',
+ #                        'seq' = 'score.seq')
+#load(training_score_path)
+#training_scores <- preds %>% select(id, type, eval(model_cols[[selected_model]]))
+#heldout_scores <- tibble(fread(heldout_score_path)) %>% select(id, type, eval(model_cols[[selected_model]]))
+#delfi_scores <- rbind(training_scores, heldout_scores)
+#setnames(delfi_scores, model_cols[[selected_model]], 'Delfi Score')
+
+
+se<-read_csv(here("data","two_test_plan","delfi-tf-results_screen.csv"))
+se2<-read_csv(here("data","two_test_plan","delfi-results_risk.csv"))
+se$model<-"Screening Model"
+se2$model <- "Surveillance Model"
+se<-rbind(se,se2)
+se<-se %>% mutate(score=if_else(model=="Screening Model",score.delfi.lr,score.delfi.gbm))
+delfi_scores<-se %>% filter(Disease !="HCC"|model=="Screening Model") %>% select(id,score)
+# separate out data in the body of the heatmap from the annotations
+sample_annot <- features %>% select(id, `HCC Status`, clinical_Disease_Status, clinical_Age,clinical_BCLC)
+#meta_annot <- meta %>% select(id, Stage, Sex, age)
+#sample_annot <- inner_join(sample_annot, meta_annot, by = c("id" = "id"))
+#sample_annot <- inner_join(sample_annot, delfi_scores, by = c("id" = "id"))
+sample_annot<-inner_join(sample_annot,delfi_scores,by="id")
+sample_annot <- data.frame(sample_annot)
+rownames(sample_annot) <- sample_annot$id
+sample_annot$id <- NULL
+
+#sample_annot$Type <- factor(sample_annot$`HCC.Status`, levels = c('No', 'Yes'))
+#sample_annot$`Pack Years` <- as.numeric(sample_annot$clinical_packyears)
+#sample_annot$`Smoking Status` <- factor(sample_annot$clinical_smokingstatus, levels = c('never', 'former', 'current'))
+#sample_annot$Sex <- factor(sample_annot$Sex, levels = c('Male', 'Female'))
+sample_annot$Age <- as.numeric(sample_annot$clinical_Age)
+sample_annot$Stage <- factor(sample_annot$clinical_BCLC, levels = c('N', '0', 'A', 'B','C'))
+sample_annot$`Delfi Score` = sample_annot$score
+sample_annot$`Disease` = sample_annot$clinical_Disease_Status
+
+sample_annot[,c('HCC.Status', 'clinical_Disease_Status', 'clinical_Age', 'clinical_BCLC', 'score.delfi')] <- NULL
+sample_annot  = sample_annot[,c( 'Stage', 'Disease','Age','Delfi Score')]
+sample_annot<-sample_annot %>% arrange(Disease,Stage, `Delfi Score`)
+write_csv(sample_annot, here("data","sample_annotation_heatmap.csv"))
+```
+
+```{r feature.annotation, echo=FALSE}
+#--------------------------------construct feature annotation object ----------------------------#
+features_annot <- data.frame(Family = sapply(colnames(dna_features), function(x) str_split(x, '_')[[1]][1]))
+rownames(features_annot) <- colnames(dna_features)
+
+```
+
+
+```{r data.setup, echo=FALSE}
+# manually re-order the data matrix rows, and the row annotations
+# such that the samples are grouped by type (healthy vs cancer),
+# and sorted in decreasing order of delfi scores
+
+#doing weird stuff to change the order of the columns. There were a lot of better ways to do this but it works for now.
+sample_annot <- sample_annot[with(sample_annot, order(Disease, - `Delfi Score`,desc(Stage))),]
+sample_annot2<-sample_annot
+sample_annot2[,1]<-sample_annot$Disease
+sample_annot2[,2]<-sample_annot$Stage
+sample_annot<-sample_annot2 %>% rename(Disease2=Stage) %>% rename(Stage2=Disease) %>% rename(Disease=Disease2) %>% rename(Stage=Stage2)
+
+dna_features <- dna_features[rownames(sample_annot),]
+split <- sample_annot$Disease
+split_col <- features_annot$Family
+
+```
+
+```{r heatmap, echo=FALSE, fig.width = 12, fig.height = 20, message=FALSE, warning=FALSE,dev=c("png", "pdf")}
+col_fun_body = colorRamp2(c(-2, -1, 0, 1, 2), rev(c('#d7191c', '#fdae61', '#ffffbf', '#abd9e9', '#2c7bb6')))
+
+col_fun_row = list(Age = colorRamp2(c(23, 94), c('#f7fcf0', '#4eb3d3')) ,
+                   Disease= structure(c('#ffffff', '#d9d9d9', '#737373','#cb181d'), names = c('Non-cancer','Viral Hepatitis', 'Cirrhosis', 'HCC')),  Stage = structure(c('#eeeeee', '#fee5d9', '#fcae91', '#fb6a4a', '#cb181d'), names = c('N', '0', 'A','B','C')), `Delfi Score` = colorRamp2(c(0, 1), c('#ffffff', '#111111')))
+#Type = structure(c('#f7f7f7', '#c7e9c0'), names = c('No', 'Yes')),
+
+col_fun_column = list(Family = structure(c('#66c2a5', '#8da0cb', '#e78ac3'), names = c('zscore', 'ratio', 'TFBS')))
+
+
+
+ht <- Heatmap(dna_features, name = "Values", col = col_fun_body, show_row_dend =  FALSE, show_column_dend = FALSE, show_row_names = FALSE, show_column_names = FALSE, row_title = 'Samples', column_title = 'Features', left_annotation = rowAnnotation(df = sample_annot, col = col_fun_row, annotation_name_side= 'top'), top_annotation = columnAnnotation(df = features_annot, col = col_fun_column), row_split = split,column_split=split_col,cluster_row_slices = FALSE, cluster_rows = FALSE,cluster_column_slices = FALSE,cluster_columns=TRUE)
+#adding cluster_columns=FALSE does no clustering
+#cluster_columns=TRUE does clustering
+#adding column_split=split_col and cluster_column_slices=TRUE clusters by family
+
+ #out.file <- paste0('../docs/figure/feature_heatmap_training_', selected_model , '.pdf')
+
+#out.file <- paste0('../docs/figure/feature_heatmap.Rmd/feature_heatmap_training_',
+                 # ifelse(include_cov == TRUE, 'withcov_', 'nocov_'),
+                 # selected_model,
+                 # ifelse(data_iteration == 1, '_firstsub', '_secondsub'),
+                 # '.pdf')
+
+#pdf(out.file, width = 12, height = 18)
+
+#pdf("test.pdf", width=12, height=18)
+draw(ht)
+#dev.off()
+```
+
+```{r heatmap1, echo=FALSE, fig.width = 12, fig.height = 20, message=FALSE, warning=FALSE,dev=c("png", "pdf")}
+
+#pdf("heatmap_nocluster.pdf",height=20,width=12)
+ht
+#dev.off()
+```

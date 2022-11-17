@@ -1,0 +1,368 @@
+---
+title: "Supplemental analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r lucas}
+
+outDir <<- "/dcl01/scharpf1/data/dbruhm/delfi_followup/tfbs-lucas/outDir"
+
+if(file.exists("../data/cohort_rel_covL.txt")){cov.df <- read_tsv("../data/cohort_rel_covL.txt")
+}else{
+## For prelim analysis 
+finished.files <- list.files(file.path(outDir, "tmp"))
+cov.list <- lapply(finished.files, function(t) readRDS(file.path(file.path(outDir, "tmp", t))))
+cov.df <- do.call("rbind", cov.list)
+rownames(cov.df) <- gsub("_rel_cov.rds$", "", finished.files)
+as.data.frame(cov.df) %>% rownames_to_column(var="id") ->cov.df
+write_tsv(cov.df,"../data/cohort_rel_covL.txt")
+}
+library(readr)
+library(readxl)
+  Livercohortmetadata_curated <-  read_excel("../data/LUCAS_metadata.xlsx")
+
+Livercohortmetadata_curated%>% filter(`Histological diagnosis` %in% c("Benign","Adenocarcinoma","No baseline cancer")) %>%
+  dplyr::select(cg_id,id,`type`)%>% inner_join(cov.df) ->covm
+as.data.frame(t(colAUC(covm[4:5623],covm$`type`, alg = "ROC"))) %>% 
+  rownames_to_column(var = "stat") %>% arrange(-`cancer vs. healthy`) %>% 
+  mutate("name"=stat)%>% separate(name,into = c("name","TF","extra"), extra = "merge") %>% 
+  separate(name,c("name"), sep = "E") %>% group_by(TF) %>% 
+  mutate("max"=max(`cancer vs. healthy`)) %>% 
+  arrange(-`cancer vs. healthy`)%>%  
+  #distinct(TF,.keep_all = TRUE) %>% 
+  ungroup() %>% dplyr::mutate(Rank = order((order(-`cancer vs. healthy`))))  -> tfmorderl
+
+## get number of peaks per sample
+if(file.exists("../data/lengthnameTF.rds")){lengthnameTF <- readRDS("../data/lengthnameTF.rds")
+}else{
+tfbs.dir <- "/dcl01/scharpf1/data/dbruhm/delfi_followup/tfbs-pipeline/data/individual_tfs"
+tfbs.sets <- list.files(tfbs.dir)
+
+tfbs.list <- lapply(tfbs.sets, function(t) length(ranges(readRDS(file.path(file.path(tfbs.dir, t))))))
+names(tfbs.list) <-gsub(".rds","",tfbs.sets)
+plyr::ldply(tfbs.list) -> tflengths
+#mart_export <- read_csv("/dcs04/scharpf/data/zfoda/mart_export.txt") %>% rename(converted_alias=`NCBI gene (formerly Entrezgene) ID`,initial_alias=`Gene name`)
+#nameconverter <- read_csv("gProfiler_hsapiens_6-12-2022_7-56-37 AM.csv")
+convert <- read_csv("convert.csv")
+left_join(tfmorder,tflengths, by=c("stat"=".id")) %>%  left_join(convert, by=c("TF"="TF.x")) %>% distinct(stat,.keep_all = TRUE) %>% dplyr::select(1,4,5,8,9,11) %>%  dplyr::rename("peaks"=V1) -> lengthnameTF
+
+
+saveRDS(lengthnameTF,file = "../data/lengthnameTF.rds")
+}
+
+tfmlengthandorderl <- left_join(tfmorderl,lengthnameTF) %>%  filter(peaks>3000) #%>% distinct(TF,.keep_all = TRUE)
+
+saveRDS(tfmlengthandorderl,file = "../data/lunglengthandorder.rds")
+tfmlengthandorderl <- readRDS("../data/lunglengthandorder.rds")
+
+gtest<-  tfmlengthandorderl %>% dplyr::select(`converted_alias.x`,max,`cancer vs. healthy`,TF) %>% distinct(`converted_alias.x`, .keep_all = TRUE) 
+gtest %>% dplyr::mutate(`lung_plasma` = order(order(max, decreasing=TRUE))) ->lungorder
+gtest$`cancer vs. healthy` -> ggene_sets
+gtest$`converted_alias.x` -> names(ggene_sets)
+ggene_list = sort(ggene_sets, decreasing = TRUE)
+library(DOSE)
+gseDGN(ggene_list,scoreType = "pos", eps=0,maxGSSize = 5000, minGSSize = 100 ,pvalueCutoff = 1) -> xgnlung
+enrichplot::dotplot(xgnlung, showCategory=15,orderBy="x", x="NES",decreasing=TRUE, size="GeneRatio")
+
+png("../output/gsealungadenoresub.png")
+gseaplot2(xgnlung,title = paste0(xgnlung$Description[1],"\nAdjusted p-value=",format(xgnlung$p.adjust[1],digits=3)),geneSetID = 3,color = "purple")
+dev.off()
+png("../output/dotplotlungadenoresub.png")
+enrichplot::dotplot(xgnlung, showCategory=15,orderBy="x", x="NES",decreasing=TRUE, size="GeneRatio")
+dev.off()
+
+as.data.frame( xgnlung) -> lungn.df
+saveRDS(lungn.df, "../data/lungn") 
+all.df <- gn.df %>% select(Description,NES,`p.adjust`,setSize) %>% dplyr::rename("Liver NES"=NES,"Liver FDR"= `p.adjust`) %>% left_join(lungn.df %>% select(Description,NES,`p.adjust`) %>% dplyr::rename("Lung NES"=NES, "Lung FDR"=`p.adjust`)) #%>% left_join(brain.df) %>% left_join(panc.df) %>% left_join(ov.df, by="Description") %>% select(!setSize.y)
+
+all.df$organ <-if_else(grepl("liver|hepa",all.df$Description, ignore.case = TRUE),"Liver",ifelse(grepl("lung",all.df$Description,ignore.case = TRUE,),"Lung","other"))
+
+all.df$cancer <-if_else(grepl("cancer|oma|neoplas|malig|tumor",all.df$Description, ignore.case = TRUE),"Cancer","other")
+
+all.df$label <- ifelse(all.df$`Liver FDR` <0.00003 & all.df$organ=="Liver"|all.df$`Lung FDR` & all.df$organ=="Lung",all.df$Description,"")
+
+saveRDS(all.df,"../data/liverlung.rds")
+
+
+```
+
+```{r lucas}
+library(readr)
+library(readxl)
+library(tidyverse)
+tfbs.dir <- "/dcl01/scharpf1/data/dbruhm/delfi_followup/tfbs-pipeline/data/individual_tfs"
+tfbs.sets <- list.files(tfbs.dir)
+
+tfbs.list <- lapply(tfbs.sets, function(t) length(ranges(readRDS(file.path(file.path(tfbs.dir, t))))))
+names(tfbs.list) <-gsub(".rds","",tfbs.sets)
+plyr::ldply(tfbs.list) -> tflengths
+#tflengths$.id <- gsub("-",".",tflengths$.id)
+
+#fragDir <<- "/dcs04/scharpf/data/annapragada/Liver_Curated/granges"
+outDir <<- "/dcs04/scharpf/data/zfoda/remap202_cristiano"
+finished.files <- list.files(file.path(outDir, "tmp"))
+cov.list <- lapply(finished.files, function(t) readRDS(file.path(file.path(outDir, "tmp", t))))
+cov.df <- do.call("rbind", cov.list)
+rownames(cov.df) <- gsub("_rel_cov.rds$", "", finished.files)
+as.data.frame(cov.df) %>% rownames_to_column(var="id") ->cov.df
+write_tsv(cov.df,paste0(outDir,"/cohort_rel_cov1.txt"))
+
+#cohort_rel_cov <- read.delim("/dcs04/scharpf/data/zfoda/remap202_cristiano/cohort_rel_cov.txt", row.names=NULL)
+#cohort_rel_cov %>% dplyr::rename("id"=row.names) ->cov.df
+Livercohortmetadata_curated <-  read_csv("/dcs04/scharpf/data/zfoda/cristiano_metadata.csv") %>% dplyr::rename("id"=`WGS ID`, type =`Patient Type`)
+Livercohortmetadata_curated$cancer <- ifelse(grepl("cancer|oma|neoplas|malig|tumor",Livercohortmetadata_curated$type, ignore.case = TRUE),"yes","no") 
+X121721_medocc_samples_1_ <- read_excel("/dcs04/scharpf/data/zfoda/scripts/121721_medocc_samples (1).xlsx")
+X121721_medocc_samples_1_$type <- "Colorectal Cancer"
+medocc_metadata <- X121721_medocc_samples_1_ %>% dplyr::rename("id"=`wgs_pgdx_id`) %>% select(id,type,timepoint,stage) %>% filter(timepoint == "Baseline") %>% select(-timepoint)
+cristiano_metadata <- Livercohortmetadata_curated %>% dplyr::rename("stage"=`Stage at Diagnosis`) %>% select(id,type,stage)
+crc_metadata <- rbind(medocc_metadata,cristiano_metadata)
+crc_metadata$cancer <- ifelse(grepl("cancer|oma|neoplas|malig|tumor",crc_metadata$type, ignore.case = TRUE),"yes","no")
+
+library(caTools)
+Livercohortmetadata_curated %>% 
+  filter(`type` %in% c("Colorectal Cancer"))
+
+covm %>% dplyr::select(cancer,"GSE85524.RUNX1.HEK293T","ERP004237.STAT3.WA01","GSE61965.MITF.501MEL","GSE90454.FOXA2.Hep.G2") -> littlecovm
+colAUC(littlecovm[-1],covm$`cancer`, alg = "ROC",plotROC = TRUE)
+
+crc_metadata %>% 
+  filter(`type` %in% c("Colorectal Cancer","Healthy")) %>% 
+  left_join(cov.df) ->covm
+
+as.data.frame(t(colAUC(covm[5:5624],covm$`cancer`, alg = "ROC"))) %>% 
+  rownames_to_column(var = "stat") %>% arrange(-`no vs. yes`) %>% 
+  mutate("name"=stat)%>% separate(name,into = c("name","TF","extra"), extra = "merge") %>% 
+  separate(name,c("name"), sep = "E") %>% group_by(TF) %>% 
+  mutate("max"=max(`no vs. yes`)) %>% 
+  arrange(-`no vs. yes`)%>%  
+  #distinct(TF,.keep_all = TRUE) %>% 
+  ungroup() %>% dplyr::mutate(Rank = order((order(-`no vs. yes`))))  -> tfmorder
+lengthnameTF1 <- lengthnameTF
+
+lengthnameTF1$stat <- gsub("-",".",lengthnameTF1$stat
+                           )
+
+tfmlengthandorder <- left_join(tfmorder,lengthnameTF, by=c("stat","TF")) %>%  filter(peaks>3000) #%>% distinct(TF,.keep_all = TRUE)
+
+
+#left_join(tfmorder,tflengths, by=c("stat"=".id")) %>% dplyr::rename(peaks =V1) %>% filter(peaks>4000) -> tfmlengthandorder
+head(tfmlengthandorder$TF,n=14) %>% unique()->tfmhilist
+tail(tfmlengthandorder$TF,n=14) ->tfmlowlist
+
+head(tfmlengthandorder$stat,n=14) %>% unique()->stfmhilist
+tail(tfmlengthandorder$stat,n=14) ->stfmlowlist
+
+head(tfmlengthandorder,n=14) %>% unique()->tfmhilistt
+tail(tfmlengthandorder,n=14)%>% unique()  -> tfmlowlistt
+
+tfmhilistt$stat <- paste0(tfmhilistt$stat,"_coverage1.txt")
+tfmlowlistt$stat <- paste0(tfmlowlistt$stat,"_coverage1.txt")
+
+tfmhilistt$stat -> tfmhilistl
+tfmlowlistt$stat -> tfmlowlistl
+
+head(tfmlengthandorder,n=14) %>% unique()->tfmhilistfile
+tail(tfmlengthandorder,n=14) -> tfmlowlistfile
+tfmhilistfile$stat <- paste0(tfmhilistfile$stat,".rds")
+tfmlowlistfile$stat <- paste0(tfmlowlistfile$stat,".rds")
+write_lines(tfmhilistfile$stat,"tfhilistcrist.txt")
+write_lines(tfmlowlistfile$stat,"tflowlistcrist.txt")
+
+
+
+mart_export <- read_csv("/dcs04/scharpf/data/zfoda/mart_export.txt")
+
+saveRDS(tfmlengthandorder,file = "cristlengthandorder.rds")
+tfmlengthandorder <- readRDS("cristlengthandorder.rds")
+gtestp %>% dplyr::mutate(`colon_plasma` = order(order(max, decreasing=TRUE))) ->colonorder
+saveRDS(colonorder,"colonorder.rds")
+
+gtestp<-  tfmlengthandorder %>% dplyr::select(`converted_alias`,max,`no vs. yes`,TF) %>% distinct(`converted_alias`, .keep_all = TRUE) 
+gtestp$max -> ggene_setsp
+gtestp$`converted_alias` -> names(ggene_setsp)
+ggene_listp = sort(ggene_setsp, decreasing = TRUE)
+gseDGN(ggene_listp,scoreType = "pos", eps=0,maxGSSize = 5000 ,pvalueCutoff = 1, minGSSize = 100) -> xgnp
+
+png("gseacrist.png")
+gseaplot2(xgncrist,title = paste0(xgncrist$Description[1],"\nAdjusted p-value=",format(xgncrist$p.adjust[1],digits=3)),geneSetID = 3,color = "purple")
+dev.off()
+png("dotplotcrist.png")
+enrichplot::dotplot(xgnp, showCategory=15,orderBy="x", x="NES",decreasing=TRUE, size="GeneRatio")
+dev.off()
+
+
+
+```
+```{r Max }
+library(tidyverse)
+library(caTools)
+library(ggpubr)
+#TF coverage
+summary.df <- data.frame(id = character(0),
+                         grp = character(0),
+                         grp1 = character(0),
+                         rel_cov = character(0),
+                         TF =character(0),
+                         acceess =character(0),
+                         depth=character(0))
+covlist <-list.files("/dcs04/scharpf/data/zfoda/outdirhigh", pattern = "_summary", full.names = TRUE)
+for (i in 1:length(covlist)) {
+  tmp.df <-  read_delim(covlist[i], 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+  summary.df <- rbind(summary.df, tmp.df)
+}
+
+ctcovlistlive <-list.files("/dcs04/scharpf/data/zfoda/outdirhigh", pattern = "_coverage1.txt", full.names = TRUE)
+ctlivdf <- data.frame(id = character(0), grp = character(0), pos = character(0), rel_cov = character(0), TF = character(0))
+for (i in 1:length(ctcovlistlive)) {
+ tmp.df <-  read_delim(ctcovlistlive[i], 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+  ctcovlistlive[i] %>% strsplit(split = "/" ) ->TFN
+  tmp.df$TF<- unlist(TFN)[7]
+  ctlivdf <- rbind(ctlivdf, tmp.df)
+}
+
+
+ctlivdf$TF <- gsub("GSE115597.JUNB.MCF10A-Er-SrcTAM_coverage1.txt","GSE115597.JUNB.MCF10A-Er-Src_TAM_coverage1.txt",ctlivdf$TF)
+ctlivdf$TF <- gsub("GSE40129.GATA3.MCF-7E2_coverage1.txt","GSE40129.GATA3.MCF-7_E2_coverage1.txt" ,ctlivdf$TF)
+
+write_csv(ctlivdf,"/dcs04/scharpf/data/zfoda/outdirhigh/all.txt")
+ctlivdf <- read.csv("/dcs04/scharpf/data/zfoda/outdirhigh/all.txt")
+
+
+
+write.csv(summary.df,file = "/dcs04/scharpf/data/zfoda/outdirhigh/longsumlist.csv")
+summdepth <- summary.df %>% select(-4,-5) %>% pivot_wider(names_from = TF, values_from = depth,names_prefix = "depth")
+summrelcov <- summary.df %>% select(-5,-6) %>% pivot_wider(names_from = TF, values_from = rel_cov,names_prefix = "cov")
+summaccess <- summary.df %>% select(-4,-6) %>% pivot_wider(names_from = TF, values_from = access,names_prefix = "access")
+hccsumall <- left_join(summdepth,summrelcov) %>% left_join(summaccess)
+
+write.csv(hccsumall,file = "/dcs04/scharpf/data/zfoda/outdirhigh/widesumlist.csv")
+
+
+converter <- as.data.frame(tfmhilistl[-6])
+converter$TFs <- tfmhilist
+converter %>% rename(TF="tfmhilistl[-6]") -> converter
+
+plotdf <- ctlivdf %>% filter(TF %in% tfmhilistl[-6])%>% group_by(TF,id) %>% filter(pos %in% c(3000:2500,-3000:-2500)) %>% summarise(mean(cov)) %>% right_join(ctlivdf %>% filter(TF %in% tfmhilistl)) %>% mutate(cent_cov=cov/`mean(cov)`)%>% dplyr::filter(grp != "Cholangiocarcinoma") %>% filter(TF %in% tfmhilistl) %>% dplyr::filter(grp != "Cholangiocarcinoma") %>% left_join(converter)
+
+saveRDS(plotdf,file = "/dcs04/scharpf/data/zfoda/outdirhigh/plotdf")
+
+readRDS(file = "/dcs04/scharpf/data/zfoda/outdirhigh/plotdf") ->plotdf
+
+
+pl2 <- 	plotdf %>% 
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  filter(TFs %in% tfmhilist[1:9])%>%
+  ggplot(aes(x = pos, y = cent_cov, color = grp1, group = id)) +  
+  geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=0.5,Other=0.5), guide="none") +
+  cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-500,500)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "red", "Non-cancer" = "grey")) + theme_pubr() +
+       theme(legend.title = element_blank()) +
+         facet_wrap(~factor(TFs,levels=tfmhilist), scales = "free_y")
+
+ggsave(pl2,filename = "/dcs04/scharpf/data/zfoda/outdirhigh/tf.png", width = 10,height = 7)
+
+
+```
+
+
+```{r Min }
+
+#TF coverage
+summary.df <- data.frame(id = character(0),
+                         grp = character(0),
+                         grp1 = character(0),
+                         rel_cov = character(0),
+                         TF =character(0),
+                         acceess =character(0),
+                         depth=character(0))
+covlist <-list.files("/dcs04/scharpf/data/zfoda/outdirlow", pattern = "_summary", full.names = TRUE)
+for (i in 1:length(covlist)) {
+  tmp.df <-  read_delim(covlist[i], 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+  summary.df <- rbind(summary.df, tmp.df)
+}
+
+ctcovlistlive <-list.files("/dcs04/scharpf/data/zfoda/outdirlow", pattern = "_coverage1.txt", full.names = TRUE)
+ctlivdf <- data.frame(id = character(0), grp = character(0), pos = character(0), rel_cov = character(0), TF = character(0))
+for (i in 1:length(ctcovlistlive)) {
+ tmp.df <-  read_delim(ctcovlistlive[i], 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+  ctcovlistlive[i] %>% strsplit(split = "/" ) ->TFN
+  tmp.df$TF<- unlist(TFN)[7]
+  ctlivdf <- rbind(ctlivdf, tmp.df)
+}
+
+
+write_csv(ctlivdf,"/dcs04/scharpf/data/zfoda/outdirlow/all.txt")
+
+
+write.csv(summary.df,file = "/dcs04/scharpf/data/zfoda/outdirlow/longsumlist.csv")
+summdepth <- summary.df %>% select(-4,-5) %>% pivot_wider(names_from = TF, values_from = depth,names_prefix = "depth")
+summrelcov <- summary.df %>% select(-5,-6) %>% pivot_wider(names_from = TF, values_from = rel_cov,names_prefix = "cov")
+summaccess <- summary.df %>% select(-4,-6) %>% pivot_wider(names_from = TF, values_from = access,names_prefix = "access")
+hccsumall <- left_join(summdepth,summrelcov) %>% left_join(summaccess)
+
+write.csv(hccsumall,file = "/dcs04/scharpf/data/zfoda/outdirlow/widesumlist.csv")
+
+
+converter <- as.data.frame(tfmlowlistl)
+converter$TFs <- tfmlowlist
+converter %>% dplyr::rename(TF="tfmlowlistl") -> converter
+
+plotdf <- ctlivdf %>% group_by(TF,id) %>% filter(pos %in% c(3000:2500,-3000:-2500))%>% summarise(mean(cov)) %>% right_join(ctlivdf) %>% mutate(cent_cov=cov/`mean(cov)`) %>% dplyr::filter(grp != "Cholangiocarcinoma") %>% left_join(converter)
+
+saveRDS(plotdf,file = "/dcs04/scharpf/data/zfoda/outdirlow/plotdf")
+
+readRDS(file = "/dcs04/scharpf/data/zfoda/outdirlow/plotdf") ->plotdf
+
+pl2 <- 	plotdf %>% 
+  #filter(id %in% c("CGLI1P","CGLI100P")) %>%
+  filter(TFs %in% tfmlowlist[-13])%>%
+  ggplot(aes(x = pos, y = cent_cov, color = grp1, group = id)) +  
+  geom_line(aes(color = grp1, alpha= grp1))+ scale_alpha_manual(values =c(HCC=0.5,Other=0.5), guide="none") +
+  cowplot::theme_cowplot() +
+       geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+       #ylim(c(0.5, 1)) +
+  xlim(c(-500,500)) +
+       ylab("Relative coverage") +
+       xlab("Position relative to peak (bp)") +
+       scale_color_manual(values = c(HCC = "blue", "Non-cancer" = "grey")) + theme_pubr() +
+       theme(legend.title = element_blank()) +
+         facet_wrap(~factor(TFs,levels=tfmlowlist[-13]), scales = "free_y")
+
+ggsave(pl2,filename = "/dcs04/scharpf/data/zfoda/outdirlow/tf.png", width = 10,height = 7)
+
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
