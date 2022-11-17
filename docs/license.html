@@ -288,7 +288,7 @@ $(document).ready(function () {
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
 <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
-workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger"
+workflowr <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span>
 </button>
 </p>
@@ -299,8 +299,8 @@ aria-hidden="true"></span>
 </li>
 <li>
 <a data-toggle="tab" href="#checks"> Checks <span
-class="glyphicon glyphicon-exclamation-sign text-danger"
-aria-hidden="true"></span> </a>
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
 </li>
 <li>
 <a data-toggle="tab" href="#versions">Past versions</a>
@@ -313,9 +313,9 @@ aria-hidden="true"></span> </a>
 </p>
 <p>
 <strong>Checks:</strong> <span
-class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 1
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 2
 <span class="glyphicon glyphicon-exclamation-sign text-danger"
-aria-hidden="true"></span> 1
+aria-hidden="true"></span> 0
 </p>
 <p>
 <strong>Knit directory:</strong> <code>foda2022/</code> <span
@@ -338,36 +338,33 @@ versions</em> tab lists the development history.
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges">
-<span class="glyphicon glyphicon-exclamation-sign text-danger"
-aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted
-changes </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
 </p>
 </div>
-<div id="strongRMarkdownfilestronguncommittedchanges"
+<div id="strongRMarkdownfilestronguptodate"
 class="panel-collapse collapse">
 <div class="panel-body">
-<p>The R Markdown is untracked by Git. To know which version of the R
-Markdown file created these results, you’ll want to first commit it to
-the Git repo. If you’re still working on the analysis, you can ignore
-this warning. When you’re finished, you can run
-<code>wflow_publish</code> to commit the R Markdown file and build the
-HTML.</p>
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
 </div>
 </div>
 </div>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomcancergenomicsfoda2022treeb10fe53e5dea56c5d9577940fcaf00fc709e675btargetblankb10fe53a">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomcancergenomicsfoda2022treef7dcb909de6db0638a0f583fc80bb7f401277601targetblankf7dcb90a">
 <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span> <strong>Repository version:</strong>
-<a href="https://github.com/cancer-genomics/foda2022/tree/b10fe53e5dea56c5d9577940fcaf00fc709e675b" target="_blank">b10fe53</a>
+<a href="https://github.com/cancer-genomics/foda2022/tree/f7dcb909de6db0638a0f583fc80bb7f401277601" target="_blank">f7dcb90</a>
 </a>
 </p>
 </div>
 <div
-id="strongRepositoryversionstrongahrefhttpsgithubcomcancergenomicsfoda2022treeb10fe53e5dea56c5d9577940fcaf00fc709e675btargetblankb10fe53a"
+id="strongRepositoryversionstrongahrefhttpsgithubcomcancergenomicsfoda2022treef7dcb909de6db0638a0f583fc80bb7f401277601targetblankf7dcb90a"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -377,7 +374,7 @@ reproducibility.
 </p>
 <p>
 The results in this page were generated with repository version
-<a href="https://github.com/cancer-genomics/foda2022/tree/b10fe53e5dea56c5d9577940fcaf00fc709e675b" target="_blank">b10fe53</a>.
+<a href="https://github.com/cancer-genomics/foda2022/tree/f7dcb909de6db0638a0f583fc80bb7f401277601" target="_blank">f7dcb90</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -403,9 +400,6 @@ Ignored files:
     Ignored:    data/two_test_plan/.DS_Store
     Ignored:    data/two_test_plan/Old_dont_delete_yet/.DS_Store
     Ignored:    output/.DS_Store
-
-Untracked files:
-    Untracked:  analysis/license.Rmd
 
 </code></pre>
 <p>
@@ -451,6 +445,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/cancer-genomics/foda2022/blob/f7dcb909de6db0638a0f583fc80bb7f401277601/analysis/license.Rmd" target="_blank">f7dcb90</a>
+</td>
+<td>
+shay-279
+</td>
+<td>
+2022-11-17
+</td>
+<td>
+Add license
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/cancer-genomics/foda2022/f7dcb909de6db0638a0f583fc80bb7f401277601/docs/license.html" target="_blank">f7dcb90</a>
+</td>
+<td>
+shay-279
+</td>
+<td>
+2022-11-17
+</td>
+<td>
+Add license
+</td>
+</tr>
 <tr>
 <td>
 Rmd
