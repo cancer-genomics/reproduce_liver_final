@@ -280,7 +280,7 @@ $(document).ready(function () {
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
 <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
-workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger"
+workflowr <span class="glyphicon glyphicon-ok text-success"
 aria-hidden="true"></span>
 </button>
 </p>
@@ -291,8 +291,8 @@ aria-hidden="true"></span>
 </li>
 <li>
 <a data-toggle="tab" href="#checks"> Checks <span
-class="glyphicon glyphicon-exclamation-sign text-danger"
-aria-hidden="true"></span> </a>
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</a>
 </li>
 <li>
 <a data-toggle="tab" href="#versions">Past versions</a>
@@ -305,9 +305,9 @@ aria-hidden="true"></span> </a>
 </p>
 <p>
 <strong>Checks:</strong> <span
-class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7
 <span class="glyphicon glyphicon-exclamation-sign text-danger"
-aria-hidden="true"></span> 1
+aria-hidden="true"></span> 0
 </p>
 <p>
 <strong>Knit directory:</strong> <code>foda2022/</code> <span
@@ -330,21 +330,18 @@ versions</em> tab lists the development history.
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges">
-<span class="glyphicon glyphicon-exclamation-sign text-danger"
-aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted
-changes </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
+</a>
 </p>
 </div>
-<div id="strongRMarkdownfilestronguncommittedchanges"
+<div id="strongRMarkdownfilestronguptodate"
 class="panel-collapse collapse">
 <div class="panel-body">
-<p>The R Markdown is untracked by Git. To know which version of the R
-Markdown file created these results, you’ll want to first commit it to
-the Git repo. If you’re still working on the analysis, you can ignore
-this warning. When you’re finished, you can run
-<code>wflow_publish</code> to commit the R Markdown file and build the
-HTML.</p>
+<p>Great! Since the R Markdown file has been committed to the Git
+repository, you know the exact version of the code that produced these
+results.</p>
 </div>
 </div>
 </div>
@@ -435,13 +432,13 @@ project makes it easier to run your code on other machines.</p>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrong94de5f7">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrong087127b">
 <span class="glyphicon glyphicon-ok text-success"
-aria-hidden="true"></span> <strong>Repository version:</strong> 94de5f7
+aria-hidden="true"></span> <strong>Repository version:</strong> 087127b
 </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrong94de5f7"
+<div id="strongRepositoryversionstrong087127b"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -450,7 +447,7 @@ and connecting the code version to the results is critical for
 reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version 94de5f7.
+The results in this page were generated with repository version 087127b.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -465,89 +462,17 @@ were generated:
 </p>
 <pre><code>
 Ignored files:
+    Ignored:    analysis/.DS_Store
+    Ignored:    analysis/.Rhistory
     Ignored:    code/.DS_Store
     Ignored:    code/.Rhistory
+    Ignored:    code/liver.tools/.DS_Store
     Ignored:    data/.DS_Store
+    Ignored:    data/TCGA/.DS_Store
+    Ignored:    data/TCGA/.Rhistory
+    Ignored:    data/two_test_plan/.DS_Store
+    Ignored:    data/two_test_plan/Old_dont_delete_yet/.DS_Store
     Ignored:    output/.DS_Store
-
-Untracked files:
-    Untracked:  LICENSE
-    Untracked:  analysis/1a.Rmd
-    Untracked:  analysis/1bc.Rmd
-    Untracked:  analysis/3a.Rmd
-    Untracked:  analysis/3b_c.Rmd
-    Untracked:  analysis/4a.Rmd
-    Untracked:  analysis/4b_c.Rmd
-    Untracked:  analysis/4d.Rmd
-    Untracked:  analysis/Clinical_Supplement.Rmd
-    Untracked:  analysis/Fig2AB.Rmd
-    Untracked:  analysis/Fig2C.Rmd
-    Untracked:  analysis/Fig2DE.Rmd
-    Untracked:  analysis/Rob_AFP.Rmd
-    Untracked:  analysis/S1.Rmd
-    Untracked:  analysis/S10_11.Rmd
-    Untracked:  analysis/S6.Rmd
-    Untracked:  analysis/Text_Numbers_Submitted.Rmd
-    Untracked:  analysis/figS12.Rmd
-    Untracked:  code/Model_Lo_Val.Rmd
-    Untracked:  code/TF.rmd
-    Untracked:  code/feature_importance.Rmd
-    Untracked:  code/feature_importanceTF.Rmd
-    Untracked:  code/gsearesuball.Rmd
-    Untracked:  code/gsearesubatrisk.Rmd
-    Untracked:  code/hilistallcohort.txt
-    Untracked:  code/liver.tools/
-    Untracked:  code/plot-roc.r
-    Untracked:  code/prepare_tcga_plot_data.r
-    Untracked:  code/sumcomb.Rmd
-    Untracked:  code/supplementalgsearesub.Rmd
-    Untracked:  code/tfbs_coverage-v1-01val.R
-    Untracked:  code/tfbsmakerhigh.sh
-    Untracked:  code/tfbsmakerlowwo.sh
-    Untracked:  code/tfhilistall.txt
-    Untracked:  code/tfhilistatrisk.txt
-    Untracked:  code/tflowlistall.txt
-    Untracked:  code/tflowlistatrisk.txt
-    Untracked:  data/Alltissuetyperesuball.rds
-    Untracked:  data/Alltissuetyperesubatrisk.rds
-    Untracked:  data/Clinical_Metadata_spreadsheet_8_11.csv
-    Untracked:  data/Clinical_Metadata_spreadsheet_8_11.xlsx
-    Untracked:  data/LUCAS_metadata.xlsx
-    Untracked:  data/TCGA/
-    Untracked:  data/TF_names_ref.csv
-    Untracked:  data/arm_heights.rds
-    Untracked:  data/cohort_rel_cov2.txt
-    Untracked:  data/delfi_features.csv
-    Untracked:  data/high_mean
-    Untracked:  data/lengthnameTF.rds
-    Untracked:  data/liverlengthandorderall.rds
-    Untracked:  data/liverlengthandorderatrisk.rds
-    Untracked:  data/long_bins.csv
-    Untracked:  data/long_bins_val.csv
-    Untracked:  data/low_mean
-    Untracked:  data/lunglengthandorder.rds
-    Untracked:  data/lungn
-    Untracked:  data/processed.rds
-    Untracked:  data/sample_annotation_heatmap.csv
-    Untracked:  data/simulation.xls
-    Untracked:  data/simulation_new_aa.xls
-    Untracked:  data/two_test_plan/
-    Untracked:  data/val_preds.csv
-    Untracked:  data/validation_features.csv
-    Untracked:  data/validation_meta.csv
-    Untracked:  data/validation_rel_cov.txt
-    Untracked:  output/feature_importance.Rmd/
-    Untracked:  output/feature_importance_TF.Rmd/
-    Untracked:  output/word_docs/
-
-Unstaged changes:
-    Modified:   README.md
-    Modified:   analysis/about.Rmd
-    Modified:   analysis/index.Rmd
-    Modified:   analysis/license.Rmd
-    Modified:   code/README.md
-    Modified:   data/README.md
-    Modified:   output/README.md
 
 </code></pre>
 <p>
@@ -562,10 +487,73 @@ have uncommitted changes.
 <hr>
 </div>
 <div id="versions" class="tab-pane fade">
+
 <p>
-There are no past versions. Publish this analysis with
-<code>wflow_publish()</code> to start tracking its development.
+These are the previous versions of the repository in which changes were
+made to the R Markdown (<code>analysis/S1.Rmd</code>) and HTML
+(<code>docs/S1.html</code>) files. If you’ve configured a remote Git
+repository (see <code>?wflow_git_remote</code>), click on the hyperlinks
+in the table below to view the files as they were in that past version.
 </p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+087127b
+</td>
+<td>
+shay-279
+</td>
+<td>
+2022-11-17
+</td>
+<td>
+Paper publication
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+087127b
+</td>
+<td>
+shay-279
+</td>
+<td>
+2022-11-17
+</td>
+<td>
+Paper publication
+</td>
+</tr>
+</tbody>
+</table>
+</div>
 <hr>
 </div>
 </div>
@@ -799,6 +787,43 @@ right.annot &lt;- bl %&gt;%
 <pre class="r"><code>#pdf(&quot;righttest.pdf&quot;,height=40,width=8)
 right.annot</code></pre>
 <p><img src="figure/S1.Rmd/side_annotation-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-side_annotation-1">
+Past versions of side_annotation-1.png
+</button>
+</p>
+<div id="fig-side_annotation-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+087127b
+</td>
+<td>
+shay-279
+</td>
+<td>
+2022-11-17
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>#dev.off()</code></pre>
 </div>
 <div id="fig-4" class="section level2">
@@ -836,6 +861,43 @@ grid.arrange(grobs=gl,
              widths=c(4, 1),
              padding=unit(0, &quot;lines&quot;))</code></pre>
 <p><img src="figure/S1.Rmd/fig4_hm-1.png" width="1344" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-fig4_hm-1">
+Past versions of fig4_hm-1.png
+</button>
+</p>
+<div id="fig-fig4_hm-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+087127b
+</td>
+<td>
+shay-279
+</td>
+<td>
+2022-11-17
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>tcga.legend &lt;- cowplot::get_legend(plot)
 p2 &lt;- plot +
     guides(fill=&quot;none&quot;, color=&quot;none&quot;) +
@@ -862,6 +924,43 @@ grid.arrange(grobs=gl,
              widths=c(2.7, 4, 4, 1.5),
              padding=unit(0, &quot;lines&quot;))</code></pre>
 <p><img src="figure/S1.Rmd/modelthing-1.png" width="2400" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-modelthing-1">
+Past versions of modelthing-1.png
+</button>
+</p>
+<div id="fig-modelthing-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+087127b
+</td>
+<td>
+shay-279
+</td>
+<td>
+2022-11-17
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -907,15 +1006,15 @@ loaded via a namespace (and not attached):
 [37] fastmap_1.1.0     rlang_0.4.11      readxl_1.3.1      rstudioapi_0.13  
 [41] farver_2.1.0      jquerylib_0.1.4   generics_0.1.0    jsonlite_1.7.2   
 [45] vroom_1.5.4       magrittr_2.0.1    Rcpp_1.0.7        munsell_0.5.0    
-[49] fansi_0.5.0       lifecycle_1.0.0   stringi_1.7.4     yaml_2.2.1       
-[53] plyr_1.8.6        pkgbuild_1.2.0    parallel_4.0.5    promises_1.2.0.1 
-[57] crayon_1.4.1      cowplot_1.1.1     haven_2.4.3       hms_1.1.0        
-[61] knitr_1.33        ps_1.6.0          pillar_1.6.2      pkgload_1.2.1    
-[65] reprex_2.0.1      glue_1.4.2        evaluate_0.14     remotes_2.4.0    
-[69] modelr_0.1.8      vctrs_0.3.8       tzdb_0.1.2        httpuv_1.6.2     
-[73] testthat_3.0.4    cellranger_1.1.0  gtable_0.3.0      assertthat_0.2.1 
-[77] cachem_1.0.6      xfun_0.25         broom_0.7.9       later_1.3.0      
-[81] memoise_2.0.0     ellipsis_0.3.2   </code></pre>
+[49] fansi_0.5.0       lifecycle_1.0.0   stringi_1.7.4     whisker_0.4      
+[53] yaml_2.2.1        plyr_1.8.6        pkgbuild_1.2.0    parallel_4.0.5   
+[57] promises_1.2.0.1  crayon_1.4.1      cowplot_1.1.1     haven_2.4.3      
+[61] hms_1.1.0         knitr_1.33        ps_1.6.0          pillar_1.6.2     
+[65] pkgload_1.2.1     reprex_2.0.1      glue_1.4.2        evaluate_0.14    
+[69] remotes_2.4.0     modelr_0.1.8      vctrs_0.3.8       tzdb_0.1.2       
+[73] httpuv_1.6.2      testthat_3.0.4    cellranger_1.1.0  gtable_0.3.0     
+[77] assertthat_0.2.1  cachem_1.0.6      xfun_0.25         broom_0.7.9      
+[81] later_1.3.0       memoise_2.0.0     ellipsis_0.3.2   </code></pre>
 </div>
 </div>
 
