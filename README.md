@@ -1,4 +1,4 @@
-# foda2022
+# Detecting liver cancer using cell-free DNA fragmentomes
 
 A [workflowr][] project.
 
